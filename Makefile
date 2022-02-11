@@ -54,3 +54,9 @@ info::
 	@echo BASENAME=$(BASENAME)
 	@echo PROGRAM=$(PROGRAM)
 	@echo IMAGE=$(IMAGE)
+
+
+tools:
+	go install honnef.co/go/tools/cmd/staticcheck@latest
+	go install github.com/go-critic/go-critic/cmd/gocritic@latest
+	go install github.com/securego/gosec/v2/cmd/gosec@latest
