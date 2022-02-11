@@ -1,0 +1,18 @@
+repos:
+- repo: https://github.com/dnephin/pre-commit-golang
+  rev: v0.4.0
+  hooks:
+    - id: go-fmt
+    - id: go-vet
+      #- id: go-cyclo
+      #args: [-over=15]
+      #- id: golangci-lint
+    - id: go-critic
+
+- repo: https://github.com/deweysasser/conventional-pre-commit
+  rev: v1.2.1
+  hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [] # optional: list of Conventional Commits types to allow
+

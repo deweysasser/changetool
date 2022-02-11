@@ -1,0 +1,128 @@
+name: Release
+
+on:
+  push:
+    tags: [ v* ]
+
+env:
+  GO_VERSION: 1.17
+  REPO: ${{github.repository}}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        GOOS: [linux, darwin, windows]
+        GOARCH: [amd64, arm64]
+        include:
+          - GOOS: windows
+            ext: .exe
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ env.GO_VERSION}}
+
+    - name: Repo Name
+      id: repo-name
+      run: echo ::set-output name=name::$(basename ${{github.repository}})
+
+    - name: Test
+      run: go test -v ./...
+
+    - name: Build
+      run: make compile PROGRAM=output/${{steps.repo-name.outputs.name}}-${{env.GOOS}}-${{env.GOARCH}}${{matrix.ext}}
+      env:
+        GOOS: ${{matrix.GOOS}}
+        GOARCH: ${{matrix.GOARCH}}
+
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v2
+      with:
+        name: artifacts
+        path: output
+        retention-days: 1
+        if-no-files-found: error
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Download Artifacts
+      uses: actions/download-artifact@v2
+
+    - name: Install ChangeLog generator
+      run: |
+        wget https://github.com/git-chglog/git-chglog/releases/download/v0.15.1/git-chglog_0.15.1_linux_amd64.tar.gz
+        tar xzf git-chglog*.tar.gz git-chglog
+
+    - name: "Get Last Release"
+      id: last_release
+      uses: InsonusK/get-latest-release@v1.0.1
+      with:
+        myToken: ${{ github.token }}
+        exclude_types: "draft|prerelease"
+
+    - name: Generate Changelog for ${{ github.ref_name }}
+      id: generate-changelog
+      run: make CHANGELOG.md
+
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./artifacts/*
+        body_path: ./CHANGELOG.md
+        draft: true
+
+  docker-build:
+    runs-on: ubuntu-latest
+    name: Build the docker image
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Docker Release to GHCR
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          build-args: |
+            GO_VERSION=${{ env.GO_VERSION }}
+            VERSION=${{ github.ref_name }}
+          tags: |
+             ghcr.io/${{env.REPO}}:latest
+             ghcr.io/${{env.REPO}}:${{ github.ref_name }}
+
+# uncomment this if you're also using docker hub
+#      - name: Login to Docker Container Registry
+#        if: ${{ secrets.DOCKERHUB_TOKEN }}
+#        uses: docker/login-action@v1
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.repository_owner }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Docker Release to Docker Hub
+#        if: ${{ secrets.DOCKERHUB_TOKEN }}
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: .
+#          push: true
+#          tags: |
+#            ${{env.REPO}}:latest
+#            ${{env.REPO}}:${{github.ref_name}}
