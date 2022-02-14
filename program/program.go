@@ -23,12 +23,12 @@ type Options struct {
 
 // Run runs the program
 func (program *Options) Run() error {
-	program.initLogging()
 
 	return nil
 }
 
-func (program *Options) initLogging() {
+func (program *Options) Init() {
+
 	if program.Version {
 		fmt.Println(Version)
 		os.Exit(0)
