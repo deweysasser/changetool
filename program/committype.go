@@ -5,7 +5,11 @@ import (
 	"strings"
 )
 
-var TypesInOrder = []string{
+type TypeTag string
+
+type Types []TypeTag
+
+var TypesInOrder = Types{
 	"feat",
 	"fix",
 	"test",
@@ -17,12 +21,22 @@ var TypesInOrder = []string{
 
 type CommitEntry struct {
 	Name     string
-	Tag      string
+	Tag      TypeTag
 	Order    int
 	Messages []string
 }
 
-func asCommitList(order []string, m map[string][]string) []CommitEntry {
+func (t Types) Join(sep string) string {
+	strs := make([]string, len(t))
+
+	for n, s := range t {
+		strs[n] = string(s)
+	}
+
+	return strings.Join(strs, sep)
+}
+
+func asCommitList(order []TypeTag, m map[TypeTag][]string) []CommitEntry {
 	var list []CommitEntry
 
 	for k, v := range m {
@@ -45,9 +59,9 @@ func asCommitList(order []string, m map[string][]string) []CommitEntry {
 	return list
 }
 
-func makeEntry(order []string, k string, v []string) (entry CommitEntry) {
+func makeEntry(order []TypeTag, k TypeTag, v []string) (entry CommitEntry) {
 	entry = CommitEntry{
-		Name:     strings.Title(k),
+		Name:     strings.Title(string(k)),
 		Tag:      k,
 		Order:    1000,
 		Messages: v,

@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/alecthomas/kong v0.4.0
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/rs/zerolog v1.26.1
 )

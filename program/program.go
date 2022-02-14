@@ -18,6 +18,7 @@ type Options struct {
 	Quiet      bool       `short:"q" help:"Be less verbose than usual"`
 	Changelog  Changelog  `cmd:""`
 	VersionCmd VersionCmd `name:"version" cmd:"" help:"show program version"`
+	Semver     Semver     `cmd:"" help:"Manipulate Semantic Versions"`
 }
 
 // Run runs the program

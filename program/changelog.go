@@ -13,67 +13,21 @@ import (
 )
 
 type Changelog struct {
-	Path                   string   `arg:"" default:"."`
-	Tag                    string   `short:"t" help:"Tag from which to start"`
-	DefaultType            string   `default:"fix" help:"if type is not specified in commit, assume this type"`
-	GuessMissingCommitType bool     `default:"true" negatable:"" help:"If commit type is missing, take a guess about which it is"`
-	Order                  []string `default:"${type_order}" help:"order in which to list commit message types"`
+	Path                   string    `default:"." short:"p" help:"Path for the git worktree/repo to log"`
+	Tag                    string    `short:"t" help:"Tag from which to start"`
+	DefaultType            TypeTag   `default:"fix" help:"if type is not specified in commit, assume this type"`
+	GuessMissingCommitType bool      `default:"true" negatable:"" help:"If commit type is missing, take a guess about which it is"`
+	Order                  []TypeTag `default:"${type_order}" help:"order in which to list commit message types"`
 }
 
 var commitType = regexp.MustCompile("([a-zA-Z_][a-zA-Z_0-9]*): *")
 
 func (c *Changelog) Run() error {
 
-	r, err := git.PlainOpen(c.Path)
+	commits, err := c.CalculateChanges()
 	if err != nil {
 		return err
 	}
-
-	tags, err := r.Tags()
-	if err != nil {
-		return err
-	}
-
-	defer tags.Close()
-
-	stopAt := c.findStartVersion(tags)
-	iter, err := r.Log(&git.LogOptions{})
-
-	if err != nil {
-		return err
-	}
-
-	defer iter.Close()
-
-	commits := make(map[string][]string)
-
-	_ = iter.ForEach(func(commit *object.Commit) error {
-		if len(commit.ParentHashes) > 1 {
-			return nil
-		}
-
-		if commit.Hash == stopAt {
-			return storer.ErrStop
-		}
-
-		message := commit.Message
-		re := commitType.FindStringSubmatch(message)
-
-		var tt string
-
-		switch {
-		case len(re) > 1:
-			tt = re[1]
-			message = message[len(re[0]):]
-		case c.GuessMissingCommitType:
-			tt = c.guessType(commit)
-		default:
-			tt = c.DefaultType
-		}
-
-		commits[tt] = append(commits[tt], message)
-		return nil
-	})
 
 	for _, section := range asCommitList(c.Order, commits) {
 		fmt.Printf("%s:\n", section.Name)
@@ -94,8 +48,62 @@ func (c *Changelog) Run() error {
 	return nil
 }
 
+func (c *Changelog) CalculateChanges() (map[TypeTag][]string, error) {
+	r, err := git.PlainOpen(c.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	tags, err := r.Tags()
+	if err != nil {
+		return nil, err
+	}
+
+	defer tags.Close()
+
+	stopAt := c.findStartVersion(tags)
+	iter, err := r.Log(&git.LogOptions{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer iter.Close()
+
+	commits := make(map[TypeTag][]string)
+
+	_ = iter.ForEach(func(commit *object.Commit) error {
+		if len(commit.ParentHashes) > 1 {
+			return nil
+		}
+
+		if commit.Hash == stopAt {
+			return storer.ErrStop
+		}
+
+		message := commit.Message
+		re := commitType.FindStringSubmatch(message)
+
+		var tt TypeTag
+
+		switch {
+		case len(re) > 1:
+			tt = TypeTag(re[1])
+			message = message[len(re[0]):]
+		case c.GuessMissingCommitType:
+			tt = c.guessType(commit)
+		default:
+			tt = c.DefaultType
+		}
+
+		commits[tt] = append(commits[tt], message)
+		return nil
+	})
+	return commits, nil
+}
+
 // guessType guesses the type of the commit from information in the commit
-func (c *Changelog) guessType(commit *object.Commit) string {
+func (c *Changelog) guessType(commit *object.Commit) TypeTag {
 	stats, err := commit.Stats()
 	if err != nil {
 		return c.DefaultType

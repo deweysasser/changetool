@@ -4,7 +4,6 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/deweysasser/concom/program"
 	"github.com/rs/zerolog/log"
-	"strings"
 )
 
 func main() {
@@ -14,7 +13,7 @@ func main() {
 	context := kong.Parse(&Options,
 		kong.Description("Brief Program Summary"),
 		kong.Vars{
-			"type_order": strings.Join(program.TypesInOrder, ","),
+			"type_order": program.TypesInOrder.Join(","),
 		},
 	)
 

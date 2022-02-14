@@ -31,6 +31,8 @@ Flags:
                                           order in which to list commit message types
 ```
 
-## Version bumps
+## Semantic Versioning
 
 to be implemented
+
+* semver --
