@@ -1,6 +1,7 @@
 package program
 
 import (
+	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -62,7 +63,11 @@ func (c *Changelog) CalculateChanges() (*ChangeSet, error) {
 
 	defer tags.Close()
 
-	stopAt := c.findStartVersion(tags)
+	stopAt, err := c.findStartVersion(tags)
+	if err != nil {
+		return nil, err
+	}
+
 	log.Debug().
 		Str("stop_at", stopAt.String()[:6]).
 		Msg("Stopping at commit")
@@ -188,7 +193,7 @@ func (c *Changelog) guessType(commit *object.Commit) TypeTag {
 	return c.DefaultType
 }
 
-func (c *Changelog) findStartVersion(tags storer.ReferenceIter) (stop plumbing.Hash) {
+func (c *Changelog) findStartVersion(tags storer.ReferenceIter) (stop plumbing.Hash, err error) {
 	if c.SinceTag != "" {
 		lookFor := c.SinceTag
 
@@ -209,6 +214,12 @@ func (c *Changelog) findStartVersion(tags storer.ReferenceIter) (stop plumbing.H
 
 			return nil
 		})
+
+		if stop == plumbing.ZeroHash {
+
+			err = errors.New("unable to find desired tag " + c.SinceTag)
+			return
+		}
 	}
 
 	return
