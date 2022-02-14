@@ -85,8 +85,13 @@ func (s *Semver) Run() error {
 	}
 	switch {
 	case len(changes.BreakingChanges) > 0:
-		nextVersion.Major = version.Major + 1
-		nextVersion.Minor = 0
+		// We only increment major if we're post 1.0.  Before that all changes are a "minor" level
+		if version.Major > 0 {
+			nextVersion.Major = version.Major + 1
+			nextVersion.Minor = 0
+		} else {
+			nextVersion.Major = version.Minor + 1
+		}
 		nextVersion.Patch = 0
 	case !isClean:
 		log.Debug().Str("status", status.String()).Msg("working directory not clean")
