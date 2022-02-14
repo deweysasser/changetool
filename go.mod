@@ -1,4 +1,4 @@
-module github.com/deweysasser/common-commit
+module github.com/deweysasser/concom
 
 go 1.17
 

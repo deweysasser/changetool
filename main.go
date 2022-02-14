@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/alecthomas/kong"
-	"github.com/deweysasser/common-commit/program"
+	"github.com/deweysasser/concom/program"
 	"github.com/rs/zerolog/log"
 	"strings"
 )
