@@ -2,6 +2,10 @@
 
 A tool for working with projects that use the [conventional commit](https://www.conventionalcommits.org/) conventions.
 
+## Status
+
+Experimental.  This seems to work, but I haven't put in good test cases.
+
 ## Overview
 
 This is a first, very simple, pass at a tool for working with conventional commits projects.
