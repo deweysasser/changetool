@@ -27,7 +27,7 @@ func (s *Semver) Run() error {
 	if err != nil {
 		return err
 	}
-	version, err := s.FindPreviousVersion(r)
+	version, foundTag, err := s.FindPreviousVersion(r)
 
 	if err != nil {
 		return err
@@ -36,6 +36,10 @@ func (s *Semver) Run() error {
 	log.Debug().
 		Str("previous_version", version.String()).
 		Msg("Found previous version")
+
+	if s.FromTag && s.SinceTag == "" {
+		s.SinceTag = foundTag
+	}
 
 	changes, err := s.CalculateChanges()
 	if err != nil {
@@ -85,11 +89,13 @@ func (s *Semver) Run() error {
 	}
 	switch {
 	case len(changes.BreakingChanges) > 0:
+		log.Debug().Msg("We have breaking changes")
 		// We only increment major if we're post 1.0.  Before that all changes are a "minor" level
 		if version.Major > 0 {
 			nextVersion.Major = version.Major + 1
 			nextVersion.Minor = 0
 		} else {
+			log.Debug().Msg("But we're before 1.0")
 			nextVersion.Major = version.Minor + 1
 		}
 		nextVersion.Patch = 0
@@ -120,7 +126,7 @@ func (s *Semver) Run() error {
 	return nil
 }
 
-func (s *Semver) FindPreviousVersion(r *git.Repository) (semver.Version, error) {
+func (s *Semver) FindPreviousVersion(r *git.Repository) (semver.Version, string, error) {
 	if s.FromTag {
 		return s.FindPreviousVersionFromTag(r)
 	} else {
@@ -128,13 +134,14 @@ func (s *Semver) FindPreviousVersion(r *git.Repository) (semver.Version, error) 
 	}
 }
 
-func (s *Semver) FindPreviousVersionFromTag(r *git.Repository) (version semver.Version, errReturn error) {
+func (s *Semver) FindPreviousVersionFromTag(r *git.Repository) (version semver.Version, foundTag string, errReturn error) {
 	version = semver.Version{}
 	allTags := make(map[plumbing.Hash]plumbing.ReferenceName)
+	log.Debug().Msg("finding previous version by examining tags")
 
 	tags, err := r.Tags()
 	if err != nil {
-		return version, err
+		return version, foundTag, err
 	}
 
 	defer tags.Close()
@@ -145,7 +152,7 @@ func (s *Semver) FindPreviousVersionFromTag(r *git.Repository) (version semver.V
 
 	commits, err := r.Log(&git.LogOptions{})
 	if err != nil {
-		return version, err
+		return version, "", err
 	}
 	defer commits.Close()
 
@@ -158,6 +165,7 @@ func (s *Semver) FindPreviousVersionFromTag(r *git.Repository) (version semver.V
 			// Should we look for anything with the right regexp?  Or stick to the "v*" convention?
 
 			if version, err = semver.Parse(parseName); err == nil {
+				foundTag = name.Short()
 				return storer.ErrStop
 			}
 		}
@@ -165,16 +173,16 @@ func (s *Semver) FindPreviousVersionFromTag(r *git.Repository) (version semver.V
 		return nil
 	})
 
-	return version, nil
+	return version, foundTag, nil
 }
 
 var semverRegexp = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?`)
 
-func (s *Semver) FindPreviousVersionFromFile() (semver.Version, error) {
+func (s *Semver) FindPreviousVersionFromFile() (semver.Version, string, error) {
 	version := semver.Version{}
 	f, err := os.Open(s.FromFile)
 	if err != nil {
-		return version, err
+		return version, "", err
 	}
 	defer func() {
 		_ = f.Close()
@@ -185,12 +193,12 @@ func (s *Semver) FindPreviousVersionFromFile() (semver.Version, error) {
 	for scanner.Scan() {
 		if s := semverRegexp.FindString(scanner.Text()); s != "" {
 			if ver, err := semver.Parse(s); err == nil {
-				return ver, nil
+				return ver, "", nil
 			}
 		}
 	}
 
-	return version, nil
+	return version, "", nil
 }
 
 func (s *Semver) ReplaceInFile(filename string, new string) error {
