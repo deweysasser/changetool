@@ -33,6 +33,27 @@ Flags:
 
 ## Semantic Versioning
 
-to be implemented
+```text
+Usage: concom semver --from-tag --from-file=STRING
 
-* semver --
+Manipulate Semantic Versions
+
+Flags:
+  -h, --help                              Show context-sensitive help.
+  -d, --debug                             Show debugging information
+  -l, --log-format="auto"                 How to show program output (auto|terminal|jsonl)
+  -q, --quiet                             Be less verbose than usual
+
+  -p, --path="."                          Path for the git worktree/repo to log
+  -s, --since-tag=STRING                  Tag from which to start
+      --default-type="fix"                if type is not specified in commit, assume this type
+      --[no-]guess-missing-commit-type    If commit type is missing, take a guess about which it is
+      --order=feat,fix,test,docs,build,refactor,chore,...
+                                          order in which to list commit message types
+      --replace-in=REPLACE-IN,...         Replace version in these files
+      --allow-untracked                   allow untracked files to count as clean
+
+source
+  --from-tag            Set semver from the last tag
+  --from-file=STRING    Set previous revision from the first semver looking string found in this file
+```
