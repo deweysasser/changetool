@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/alecthomas/kong"
-	"github.com/deweysasser/concom/program"
+	"github.com/deweysasser/changetool/program"
 	"github.com/rs/zerolog/log"
 	"os"
 )

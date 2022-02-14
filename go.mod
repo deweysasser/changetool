@@ -1,4 +1,4 @@
-module github.com/deweysasser/concom
+module github.com/deweysasser/changetool
 
 go 1.17
 

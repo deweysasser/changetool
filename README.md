@@ -1,4 +1,4 @@
-# concom
+# changetool
 
 A tool for working with projects that use the [conventional commit](https://www.conventionalcommits.org/) conventions.
 
@@ -17,7 +17,7 @@ or by requiring templates and config in the project.
 ## Changelog generation
 
 ```text
-Usage: concom changelog
+Usage: changetool changelog
 
 Flags:
   -h, --help                              Show context-sensitive help.
@@ -36,7 +36,7 @@ Flags:
 ## Semantic Versioning
 
 ```text
-Usage: concom semver --from-tag --from-file=STRING
+Usage: changetool semver --from-tag --from-file=STRING
 
 Manipulate Semantic Versions
 
@@ -65,15 +65,15 @@ source
 Generate a changelog since version 1.2
 
 ```text
-concom changelog --since-tag v1.2
+changetool changelog --since-tag v1.2
 ```
 
 Find out the next version
 ```text
-concom semver --from-tag
+changetool semver --from-tag
 ```
 
 Replace a file with the next version tag
 ```text
-concom semver --from-tag --replace-in version.txt
+changetool semver --from-tag --replace-in version.txt
 ```
