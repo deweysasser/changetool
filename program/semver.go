@@ -3,7 +3,7 @@ package program
 import (
 	"bufio"
 	"fmt"
-	"github.com/blang/semver"
+	"github.com/Masterminds/semver"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -47,9 +47,12 @@ func (s *Semver) Run() error {
 	}
 
 	nextVersion := version
+	log.Debug().
+		Str("base_version", version.String()).
+		Msg("Base version")
 
-	nextVersion.Build = []string{}
-	nextVersion.Pre = []semver.PRVersion{}
+	nextVersion, _ = nextVersion.SetPrerelease("")
+	nextVersion, _ = nextVersion.SetMetadata("")
 
 	log.Debug().Msg("Getting worktree")
 	w, err := r.Worktree()
@@ -91,28 +94,26 @@ func (s *Semver) Run() error {
 	case len(changes.BreakingChanges) > 0:
 		log.Debug().Msg("We have breaking changes")
 		// We only increment major if we're post 1.0.  Before that all changes are a "minor" level
-		if version.Major > 0 {
-			nextVersion.Major = version.Major + 1
-			nextVersion.Minor = 0
+		if version.Major() > 0 {
+			nextVersion = nextVersion.IncMajor()
 		} else {
 			log.Debug().Msg("But we're before 1.0")
-			nextVersion.Major = version.Minor + 1
+			nextVersion = nextVersion.IncMinor()
 		}
-		nextVersion.Patch = 0
 	case !isClean:
 		log.Debug().Str("status", status.String()).Msg("working directory not clean")
-		nextVersion.Minor = version.Minor + 1
-		nextVersion.Patch = 0
+		nextVersion = nextVersion.IncMinor()
 	case len(changes.Commits["feat"]) > 0:
-		nextVersion.Minor = version.Minor + 1
-		nextVersion.Patch = 0
+		nextVersion = nextVersion.IncMinor()
 	case len(changes.Commits["fix"]) > 0:
-		nextVersion.Patch = version.Patch + 1
+		nextVersion = nextVersion.IncPatch()
 	}
 
 	// We want to append this in any case when the worktree is dirty
 	if !isClean {
-		nextVersion.Pre = append(nextVersion.Pre, semver.PRVersion{VersionStr: fmt.Sprintf("dirty.%s", head.Hash().String()[:6])})
+		if nextVersion, err = nextVersion.SetPrerelease(fmt.Sprintf("dirty.%s", head.Hash().String()[:6])); err != nil {
+			return err
+		}
 	}
 
 	fmt.Println(nextVersion.String())
@@ -145,28 +146,65 @@ func (s *Semver) FindPreviousVersionFromTag(r *git.Repository) (version semver.V
 	}
 
 	defer tags.Close()
+
 	_ = tags.ForEach(func(ref *plumbing.Reference) error {
+		log.Debug().
+			Str("name", ref.Name().String()).
+			Str("ref", ref.Hash().String()[:6]).
+			Msg("Examining simple tag")
+
 		allTags[ref.Hash()] = ref.Name()
 		return nil
 	})
 
-	commits, err := r.Log(&git.LogOptions{})
+	tagObjects, err := r.TagObjects()
+	if err != nil {
+		return version, foundTag, err
+	}
+
+	defer tagObjects.Close()
+
+	_ = tagObjects.ForEach(func(ref *object.Tag) error {
+		// Should this be converted toa reference name, or should we change the map type?
+		if commit, err := ref.Commit(); err != nil {
+			log.Err(err).Str("name", ref.Name).Msg("Error examining commit for hash")
+			return storer.ErrStop
+		} else {
+			log.Debug().
+				Str("name", ref.Name).
+				Str("ref", commit.Hash.String()[:6]).
+				Msg("Examining tag object")
+			allTags[commit.Hash] = plumbing.ReferenceName(ref.Name)
+			return nil
+		}
+	})
+
+	commits, err := r.Log(&git.LogOptions{Order: git.LogOrderCommitterTime})
 	if err != nil {
 		return version, "", err
 	}
 	defer commits.Close()
 
+	log.Debug().Msg("Examining commits")
+
 	_ = commits.ForEach(func(commit *object.Commit) error {
+		log.Debug().
+			Str("hash", commit.Hash.String()[:6]).
+			Msg("Checking commit hash")
 		if name, exists := allTags[commit.Hash]; exists {
 			log.Debug().
 				Str("tag", name.Short()).
-				Msg("Checking tag")
+				Msg("found matching tag")
 			parseName := strings.TrimPrefix(name.Short(), "v")
 			// Should we look for anything with the right regexp?  Or stick to the "v*" convention?
 
-			if version, err = semver.Parse(parseName); err == nil {
+			log.Debug().Str("name", parseName).Msg("parsing")
+			if v, err := semver.NewVersion(parseName); err == nil {
+				version = *v
 				foundTag = name.Short()
 				return storer.ErrStop
+			} else {
+				log.Debug().AnErr("error", err).Msg("Error parsing tag for semver")
 			}
 		}
 
@@ -192,8 +230,8 @@ func (s *Semver) FindPreviousVersionFromFile() (semver.Version, string, error) {
 
 	for scanner.Scan() {
 		if s := semverRegexp.FindString(scanner.Text()); s != "" {
-			if ver, err := semver.Parse(s); err == nil {
-				return ver, "", nil
+			if ver, err := semver.NewVersion(s); err == nil {
+				return *ver, "", nil
 			}
 		}
 	}
