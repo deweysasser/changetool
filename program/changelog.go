@@ -63,6 +63,9 @@ func (c *Changelog) CalculateChanges() (*ChangeSet, error) {
 	defer tags.Close()
 
 	stopAt := c.findStartVersion(tags)
+	log.Debug().
+		Str("stop_at", stopAt.String()).
+		Msg("Stopping at commit")
 	iter, err := r.Log(&git.LogOptions{})
 
 	if err != nil {
@@ -190,5 +193,5 @@ func (c *Changelog) findStartVersion(tags storer.ReferenceIter) (stop plumbing.H
 		})
 	}
 
-	return plumbing.Hash{}
+	return
 }
