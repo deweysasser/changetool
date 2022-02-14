@@ -20,16 +20,16 @@ type Changelog struct {
 	Order                  []TypeTag `default:"${type_order}" help:"order in which to list commit message types"`
 }
 
-var commitType = regexp.MustCompile("([a-zA-Z_][a-zA-Z_0-9]*): *")
+var commitType = regexp.MustCompile(`([a-zA-Z_][a-zA-Z_0-9]*)(\(([a-zA-Z_][a-zA-Z_0-9]*)\))?(!)?: *`)
 
 func (c *Changelog) Run() error {
 
-	commits, err := c.CalculateChanges()
+	changeSet, err := c.CalculateChanges()
 	if err != nil {
 		return err
 	}
 
-	for _, section := range asCommitList(c.Order, commits) {
+	for _, section := range asCommitList(c.Order, changeSet.Commits) {
 		fmt.Printf("%s:\n", section.Name)
 
 		for _, commit := range section.Messages {
@@ -48,7 +48,8 @@ func (c *Changelog) Run() error {
 	return nil
 }
 
-func (c *Changelog) CalculateChanges() (map[TypeTag][]string, error) {
+func (c *Changelog) CalculateChanges() (*ChangeSet, error) {
+	changeSet := NewChangeset()
 	r, err := git.PlainOpen(c.Path)
 	if err != nil {
 		return nil, err
@@ -69,8 +70,6 @@ func (c *Changelog) CalculateChanges() (map[TypeTag][]string, error) {
 	}
 
 	defer iter.Close()
-
-	commits := make(map[TypeTag][]string)
 
 	_ = iter.ForEach(func(commit *object.Commit) error {
 		if len(commit.ParentHashes) > 1 {
@@ -96,10 +95,13 @@ func (c *Changelog) CalculateChanges() (map[TypeTag][]string, error) {
 			tt = c.DefaultType
 		}
 
-		commits[tt] = append(commits[tt], message)
+		changeSet.AddCommit(tt, re[3], message)
+		if re[4] != "" || strings.Contains(message, "BREAKING CHANGE") {
+			changeSet.AddBreaking(message)
+		}
 		return nil
 	})
-	return commits, nil
+	return changeSet, nil
 }
 
 // guessType guesses the type of the commit from information in the commit

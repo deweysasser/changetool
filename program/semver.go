@@ -41,15 +41,53 @@ func (s *Semver) Run() error {
 		return err
 	}
 
-	switch {
-	case len(changes["feat"]) > 0:
-		version.Minor++
-		version.Patch = 0
-	case len(changes["fix"]) > 0:
-		version.Patch++
+	nextVersion := version
+
+	nextVersion.Build = []string{}
+	nextVersion.Pre = []semver.PRVersion{}
+
+	log.Debug().Msg("Getting worktree")
+	w, err := r.Worktree()
+	if err != nil {
+		return err
 	}
 
-	fmt.Println(version.String())
+	log.Debug().Msg("Getting status")
+	status, err := w.Status()
+	if err != nil {
+		return err
+	}
+
+	log.Debug().Msg("Getting head revision")
+	head, err := r.Head()
+	if err != nil {
+		return err
+	}
+
+	isClean := status.IsClean()
+
+	switch {
+	case len(changes.BreakingChanges) > 0:
+		nextVersion.Major = version.Major + 1
+		nextVersion.Minor = 0
+		nextVersion.Patch = 0
+	case !isClean:
+		log.Debug().Str("status", status.String()).Msg("working directory not clean")
+		nextVersion.Minor = version.Minor + 1
+		nextVersion.Patch = 0
+	case len(changes.Commits["feat"]) > 0:
+		nextVersion.Minor = version.Minor + 1
+		nextVersion.Patch = 0
+	case len(changes.Commits["fix"]) > 0:
+		nextVersion.Patch = version.Patch + 1
+	}
+
+	// We want to append this in any case when the worktree is dirty
+	if !isClean {
+		nextVersion.Pre = append(nextVersion.Pre, semver.PRVersion{VersionStr: fmt.Sprintf("dirty.%s", head.Hash().String()[:6])})
+	}
+
+	fmt.Println(nextVersion.String())
 
 	for _, f := range s.ReplaceIn {
 		if err = s.ReplaceInFile(f, version.String()); err != nil {
