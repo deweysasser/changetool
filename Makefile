@@ -50,6 +50,8 @@ hooks: .git/hooks/pre-commit
 	pre-commit install
 	pre-commit install --hook-type commit-msg
 
+release: $(PROGRAM)
+	git tag -a -m "chore: create release tag" "v$$(./$(PROGRAM) semver --from-tag --allow-untracked)"
 
 info::
 	@echo BASENAME=$(BASENAME)
