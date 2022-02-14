@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/alecthomas/kong"
-	"github.com/deweysasser/golang-program/program"
+	"github.com/deweysasser/common-commit/program"
 	"github.com/rs/zerolog/log"
 )
 
