@@ -16,8 +16,9 @@ import (
 
 type Semver struct {
 	Changelog
-	FromTag  bool   `group:"source" xor:"source" required:"" help:"Set semver from the last tag" `
-	FromFile string `group:"source" xor:"source" required:"" type:"existingfile" help:"Set previous revision from the first semver looking string found in this file"`
+	FromTag   bool     `group:"source" xor:"source" required:"" help:"Set semver from the last tag" `
+	FromFile  string   `group:"source" xor:"source" required:"" type:"existingfile" help:"Set previous revision from the first semver looking string found in this file"`
+	ReplaceIn []string `type:"existingfile" help:"Replace version in these files"`
 }
 
 func (s *Semver) Run() error {
@@ -49,6 +50,12 @@ func (s *Semver) Run() error {
 	}
 
 	fmt.Println(version.String())
+
+	for _, f := range s.ReplaceIn {
+		if err = s.ReplaceInFile(f, version.String()); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -124,4 +131,50 @@ func (s *Semver) FindPreviousVersionFromFile() (semver.Version, error) {
 	}
 
 	return version, nil
+}
+
+func (s *Semver) ReplaceInFile(filename string, new string) error {
+
+	// #nosec G304
+	f, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	tmp := filename + ".tmp"
+	// #nosec G304
+	out, err := os.Create(tmp)
+
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = out.Close()
+	}()
+
+	scanner := bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		line := semverRegexp.ReplaceAllString(scanner.Text(), new)
+		if _, err = out.WriteString(line); err != nil {
+			return err
+		}
+		if _, err = out.WriteString("\n"); err != nil {
+			return err
+		}
+	}
+
+	if err = f.Close(); err != nil {
+		return err
+	}
+
+	if err = out.Close(); err != nil {
+		return err
+	}
+
+	return os.Rename(tmp, filename)
 }
