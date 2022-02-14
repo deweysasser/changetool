@@ -37,11 +37,8 @@ vet:
 	go vet ./...
 
 changelog: CHANGELOG.md
-CHANGELOG.md: .chglog/config.yml
-	git chglog $(LAST_RELEASE) >$@
-
-.chglog/config.yml: go.mod
-	sed -i.bak -e "s/repository_url:.*/repository_url: $(REPO)/" $@
+CHANGELOG.md: $(PROGRAM)
+	./$(PROGRAM) changelog --since-tag $(LAST_RELEASE) > $@
 
 hooks: .git/hooks/pre-commit
 
