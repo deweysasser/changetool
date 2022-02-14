@@ -1,7 +1,6 @@
 package program
 
 import (
-	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -14,11 +13,11 @@ var Version = "unknown"
 
 // Options is the structure of program options
 type Options struct {
-	Debug     bool      `short:"d" help:"Show debugging information"`
-	Version   bool      `short:"v" help:"Show program version"`
-	LogFormat string    `short:"l" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
-	Quiet     bool      `short:"q" help:"Be less verbose than usual"`
-	Changelog Changelog `cmd:""`
+	Debug      bool       `short:"d" help:"Show debugging information"`
+	LogFormat  string     `short:"l" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
+	Quiet      bool       `short:"q" help:"Be less verbose than usual"`
+	Changelog  Changelog  `cmd:""`
+	VersionCmd VersionCmd `name:"version" cmd:"" help:"show program version"`
 }
 
 // Run runs the program
@@ -28,11 +27,6 @@ func (program *Options) Run() error {
 }
 
 func (program *Options) Init() {
-
-	if program.Version {
-		fmt.Println(Version)
-		os.Exit(0)
-	}
 
 	switch {
 	case program.Debug:
