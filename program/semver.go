@@ -16,9 +16,10 @@ import (
 
 type Semver struct {
 	Changelog
-	FromTag   bool     `group:"source" xor:"source" required:"" help:"Set semver from the last tag" `
-	FromFile  string   `group:"source" xor:"source" required:"" type:"existingfile" help:"Set previous revision from the first semver looking string found in this file"`
-	ReplaceIn []string `type:"existingfile" help:"Replace version in these files"`
+	FromTag        bool     `group:"source" xor:"source" required:"" help:"Set semver from the last tag" `
+	FromFile       string   `group:"source" xor:"source" required:"" type:"existingfile" help:"Set previous revision from the first semver looking string found in this file"`
+	ReplaceIn      []string `type:"existingfile" help:"Replace version in these files"`
+	AllowUntracked bool     `help:"allow untracked files to count as clean"`
 }
 
 func (s *Semver) Run() error {
@@ -67,6 +68,21 @@ func (s *Semver) Run() error {
 	// FIXME:  this is a bit too aggressive
 	isClean := status.IsClean()
 
+	if s.AllowUntracked {
+		clean := true
+
+		for f, file := range status {
+			if file.Worktree != git.Untracked {
+				clean = false
+			}
+			log.Debug().Str("file", f).
+				Int8("worktree_status", int8(file.Worktree)).
+				Int8("staging_status", int8(file.Staging)).
+				Msg("File status")
+		}
+
+		isClean = clean
+	}
 	switch {
 	case len(changes.BreakingChanges) > 0:
 		nextVersion.Major = version.Major + 1
