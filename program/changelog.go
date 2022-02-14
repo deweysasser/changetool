@@ -14,7 +14,7 @@ import (
 
 type Changelog struct {
 	Path                   string    `default:"." short:"p" help:"Path for the git worktree/repo to log"`
-	Tag                    string    `short:"t" help:"Tag from which to start"`
+	SinceTag               string    `short:"s" help:"Tag from which to start" aliases:"since"`
 	DefaultType            TypeTag   `default:"fix" help:"if type is not specified in commit, assume this type"`
 	GuessMissingCommitType bool      `default:"true" negatable:"" help:"If commit type is missing, take a guess about which it is"`
 	Order                  []TypeTag `default:"${type_order}" help:"order in which to list commit message types"`
@@ -64,9 +64,9 @@ func (c *Changelog) CalculateChanges() (*ChangeSet, error) {
 
 	stopAt := c.findStartVersion(tags)
 	log.Debug().
-		Str("stop_at", stopAt.String()).
+		Str("stop_at", stopAt.String()[:6]).
 		Msg("Stopping at commit")
-	iter, err := r.Log(&git.LogOptions{})
+	iter, err := r.Log(&git.LogOptions{Order: git.LogOrderCommitterTime})
 
 	if err != nil {
 		return nil, err
@@ -74,17 +74,29 @@ func (c *Changelog) CalculateChanges() (*ChangeSet, error) {
 
 	defer iter.Close()
 
+	numChanges := 0
+
 	_ = iter.ForEach(func(commit *object.Commit) error {
 		if len(commit.ParentHashes) > 1 {
 			return nil
 		}
 
+		log.Debug().
+			Str("stop_at", stopAt.String()[:6]).
+			Str("this_commit", commit.Hash.String()[:6]).
+			Msg("Looking for stop point")
+
 		if commit.Hash == stopAt {
 			return storer.ErrStop
 		}
 
+		numChanges++
 		message := commit.Message
 		re := commitType.FindStringSubmatch(message)
+		section := ""
+		if len(re) > 3 {
+			section = re[3]
+		}
 
 		var tt TypeTag
 
@@ -98,12 +110,17 @@ func (c *Changelog) CalculateChanges() (*ChangeSet, error) {
 			tt = c.DefaultType
 		}
 
-		changeSet.AddCommit(tt, re[3], message)
-		if re[4] != "" || strings.Contains(message, "BREAKING CHANGE") {
+		changeSet.AddCommit(tt, section, message)
+		if (len(re) > 4 && re[4] != "") || strings.Contains(message, "BREAKING CHANGE") {
 			changeSet.AddBreaking(message)
 		}
 		return nil
 	})
+
+	log.Debug().
+		Int("number_of_changes", numChanges).
+		Msg("Number of changes")
+
 	return changeSet, nil
 }
 
@@ -172,16 +189,17 @@ func (c *Changelog) guessType(commit *object.Commit) TypeTag {
 }
 
 func (c *Changelog) findStartVersion(tags storer.ReferenceIter) (stop plumbing.Hash) {
-	if c.Tag != "" {
-		lookFor := "refs/tags/" + c.Tag
-		log.Debug().Str("tag", c.Tag).Msg("Looking for tag")
+	if c.SinceTag != "" {
+		lookFor := c.SinceTag
+
+		log.Debug().Str("tag", c.SinceTag).Msg("Looking for tag")
 		_ = tags.ForEach(func(t *plumbing.Reference) error {
-			name := t.Name().String()
+			name := t.Name().Short()
 			log.Debug().
 				Str("tag", name).Msg("comparing tag")
 			if name == lookFor {
 				log.Debug().
-					Str("tag", c.Tag).
+					Str("tag", c.SinceTag).
 					Str("hash", t.Hash().String()).
 					Msg("Found hash for tag")
 

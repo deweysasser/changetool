@@ -64,6 +64,7 @@ func (s *Semver) Run() error {
 		return err
 	}
 
+	// FIXME:  this is a bit too aggressive
 	isClean := status.IsClean()
 
 	switch {
