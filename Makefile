@@ -38,7 +38,11 @@ vet:
 
 changelog: CHANGELOG.md
 CHANGELOG.md: $(PROGRAM)
+ifdef LAST_RELEASE
 	./$(PROGRAM) changelog --since-tag $(LAST_RELEASE) > $@
+else
+	./$(PROGRAM) changelog > $@
+endif
 
 hooks: .git/hooks/pre-commit
 
