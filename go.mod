@@ -5,10 +5,10 @@ go 1.17
 require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/alecthomas/kong v0.4.0
-	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/rs/zerolog v1.26.1
 	github.com/stretchr/testify v1.7.0
+	gopkg.in/yaml.v2 v2.3.0
 )
 
 require (

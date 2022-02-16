@@ -1,0 +1,12 @@
+- message: "feat: initial commit"
+  files:
+    - test1.go
+    - test2.go
+- message: "non-conventional commit comment"
+- tag: v0.1
+- message: "chore: do nothing real"
+- tag: v0.2
+  message: "create v0.2"
+- message: "another non-conventional commit, this time of doc"
+  files:
+    - README.md
