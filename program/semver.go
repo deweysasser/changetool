@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/Masterminds/semver"
+	"github.com/deweysasser/changetool/changes"
 	"github.com/deweysasser/changetool/versions"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/rs/zerolog/log"
 	"os"
 )
@@ -23,6 +25,7 @@ func (s *Semver) Run() error {
 	if err != nil {
 		return err
 	}
+
 	version, foundTag, err := s.FindPreviousVersion(r)
 
 	if err != nil {
@@ -42,34 +45,38 @@ func (s *Semver) Run() error {
 		return err
 	}
 
+	nextVersion, err2 := s.findNextVersion(version, r, changes)
+	if err2 != nil {
+		return err2
+	}
+
+	fmt.Println(nextVersion.String())
+
+	for _, f := range s.ReplaceIn {
+		if err = s.ReplaceInFile(f, version.String()); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Semver) findNextVersion(version semver.Version, r *git.Repository, changes *changes.ChangeSet) (semver.Version, error) {
+
+	status, head, err := s.gitWorktreeStatus(r)
+	if err != nil {
+		return semver.Version{}, err
+	}
+
 	nextVersion := version
+	nextVersion, _ = nextVersion.SetPrerelease("")
+	nextVersion, _ = nextVersion.SetMetadata("")
+
 	log.Debug().
 		Str("base_version", version.String()).
 		Msg("Base version")
 
-	nextVersion, _ = nextVersion.SetPrerelease("")
-	nextVersion, _ = nextVersion.SetMetadata("")
-
-	log.Debug().Msg("Getting worktree")
-	w, err := r.Worktree()
-	if err != nil {
-		return err
-	}
-
-	log.Debug().Msg("Getting status")
-	status, err := w.Status()
-	if err != nil {
-		return err
-	}
-
-	log.Debug().Msg("Getting head revision")
-	head, err := r.Head()
-	if err != nil {
-		return err
-	}
-
-	// FIXME:  this is a bit too aggressive
-	isClean := status.IsClean()
+	var isClean bool
 
 	if s.AllowUntracked {
 		clean := true
@@ -85,42 +92,63 @@ func (s *Semver) Run() error {
 		}
 
 		isClean = clean
+	} else {
+		// FIXME:  this is a bit too aggressive
+		isClean = status.IsClean()
 	}
+
+	log.Debug().Str("status", status.String()).Msg("working directory clean status")
+
+	nextVersion = nextVersionFromChangeSet(changes, nextVersion)
+
+	if !isClean {
+		nextVersion = nextVersion.IncMinor()
+		return nextVersion.SetPrerelease(fmt.Sprintf("dirty.%s", head.Hash().String()[:6]))
+	} else {
+		return nextVersion, nil
+	}
+}
+
+func (s *Semver) gitWorktreeStatus(r *git.Repository) (git.Status, *plumbing.Reference, error) {
+	log.Debug().Msg("Getting worktree")
+	w, err := r.Worktree()
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	log.Debug().Msg("Getting status")
+	status, err := w.Status()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	log.Debug().Msg("Getting head revision")
+	head, err := r.Head()
+	if err != nil {
+		return nil, nil, err
+	}
+	return status, head, nil
+}
+
+func nextVersionFromChangeSet(changes *changes.ChangeSet, version semver.Version) semver.Version {
 	switch {
 	case len(changes.BreakingChanges) > 0:
 		log.Debug().Msg("We have breaking changes")
 		// We only increment major if we're post 1.0.  Before that all changes are a "minor" level
 		if version.Major() > 0 {
-			nextVersion = nextVersion.IncMajor()
+			version = version.IncMajor()
 		} else {
 			log.Debug().Msg("But we're before 1.0")
-			nextVersion = nextVersion.IncMinor()
+			version = version.IncMinor()
 		}
-	case !isClean:
-		log.Debug().Str("status", status.String()).Msg("working directory not clean")
-		nextVersion = nextVersion.IncMinor()
 	case len(changes.Commits["feat"]) > 0:
-		nextVersion = nextVersion.IncMinor()
+		version = version.IncMinor()
 	case len(changes.Commits["fix"]) > 0:
-		nextVersion = nextVersion.IncPatch()
+		version = version.IncPatch()
 	}
 
-	// We want to append this in any case when the worktree is dirty
-	if !isClean {
-		if nextVersion, err = nextVersion.SetPrerelease(fmt.Sprintf("dirty.%s", head.Hash().String()[:6])); err != nil {
-			return err
-		}
-	}
-
-	fmt.Println(nextVersion.String())
-
-	for _, f := range s.ReplaceIn {
-		if err = s.ReplaceInFile(f, version.String()); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return version
 }
 
 func (s *Semver) FindPreviousVersion(r *git.Repository) (semver.Version, string, error) {

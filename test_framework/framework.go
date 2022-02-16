@@ -109,11 +109,14 @@ func (r MyRepo) RunCommit(op GitOperation, n int) error {
 		}
 
 		_, err = fp.WriteString(fmt.Sprintf("File content for step %d\n", n))
+
 		if err != nil {
-			return err
+			return fmt.Errorf("error writing to file %s: %w", file, err)
 		}
 
-		_ = fp.Close()
+		if err = fp.Close(); err != nil {
+			return fmt.Errorf("error closing file: %w", err)
+		}
 		_, err = w.Add(file)
 		if err != nil {
 			return fmt.Errorf("error adding file %s in %s: %w", file, r.Path, err)
@@ -135,7 +138,8 @@ func TestDir(t *testing.T) string {
 	switch {
 	case os.IsNotExist(err):
 		// #nosec G304
-		if err := os.MkdirAll(base, os.ModeDir|os.ModePerm); err != nil {
+
+		if err := os.MkdirAll(base, os.ModePerm|os.ModeDir); err != nil {
 			panic(err)
 		} else {
 			return base
