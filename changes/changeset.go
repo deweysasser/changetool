@@ -32,6 +32,13 @@ func (c *ChangeSet) addCommit(tt TypeTag, section string, message string) {
 // CommitTypeGuesser is a guess function to guess commit type from the commit.  StandardGuess can be used as a base to fill this in.
 type CommitTypeGuesser func(commit *object.Commit) TypeTag
 
+// DefaultGuess just returns the specified tag if it has to guess
+func DefaultGuess(tag TypeTag) CommitTypeGuesser {
+	return func(commit *object.Commit) TypeTag {
+		return tag
+	}
+}
+
 var commitType = regexp.MustCompile(`([a-zA-Z_][a-zA-Z_0-9]*)(\(([a-zA-Z_][a-zA-Z_0-9]*)\))?(!)?: *`)
 
 // Load creates a new CommitSet from a repository
