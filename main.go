@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/alecthomas/kong"
+	"github.com/deweysasser/changetool/changes"
 	"github.com/deweysasser/changetool/program"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -14,7 +15,7 @@ func main() {
 	context := kong.Parse(&Options,
 		kong.Description("Brief Program Summary"),
 		kong.Vars{
-			"type_order": program.TypesInOrder.Join(","),
+			"type_order": changes.TypesInOrder.Join(","),
 		},
 	)
 
