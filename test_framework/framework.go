@@ -103,7 +103,7 @@ func (r MyRepo) RunCommit(op GitOperation, n int) error {
 	for _, file := range op.Files {
 		filePath := path.Join(r.Path, file)
 		// #nosec G304
-		fp, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND, os.ModePerm)
+		fp, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
 		if err != nil {
 			return err
 		}
