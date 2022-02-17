@@ -92,7 +92,7 @@ func (r MyRepo) RunTag(op GitOperation) error {
 func (r MyRepo) RunCommit(op GitOperation, n int) error {
 
 	if len(op.Files) == 0 {
-		op.Files = append(op.Files, "testing.c")
+		op.Files = append(op.Files, "example-file.c")
 	}
 
 	w, err := r.Repository.Worktree()

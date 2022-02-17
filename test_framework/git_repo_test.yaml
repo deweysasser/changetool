@@ -1,7 +1,7 @@
 - message: "feat: initial commit"
   files:
-    - test1.go
-    - test2.go
+    - example1.c
+    - example2.c
 - message: "non-conventional commit comment"
 - tag: v0.1
 - message: "chore: do nothing real"
