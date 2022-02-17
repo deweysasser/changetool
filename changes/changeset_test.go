@@ -17,7 +17,10 @@ func Test_Basic(t *testing.T) {
 		assert.FailNow(t, err.Error())
 	}
 
-	assert.NoError(t, r.RunFile("changeset_test_Basic.yaml"))
+	err = r.RunFile("changeset_test_Basic.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("full changelog", func(t *testing.T) {
 
@@ -62,15 +65,22 @@ func Test_Basic(t *testing.T) {
 		writeYaml(t, cs)
 	})
 }
+
+func must(t *testing.T, err error) {
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func Test_Breaking(t *testing.T) {
 	r, err := test_framework.NewFromTest(t)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
 
-	assert.NoError(t, r.RunFile("changeset_test_Basic.yaml"))
+	must(t, r.RunFile("changeset_test_Basic.yaml"))
 	// Add in a breaking change
-	assert.NoError(t, r.Run([]test_framework.GitOperation{
+	must(t, r.Run([]test_framework.GitOperation{
 		{
 			Message: "feat!: something that breaks",
 		},
@@ -98,7 +108,7 @@ func Test_Guessing(t *testing.T) {
 		assert.FailNow(t, err.Error())
 	}
 
-	assert.NoError(t, r.RunFile("changeset_test_Basic.yaml"))
+	must(t, r.RunFile("changeset_test_Basic.yaml"))
 
 	t.Run("full changelog guess", func(t *testing.T) {
 
