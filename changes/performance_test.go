@@ -18,7 +18,7 @@ func BenchmarkLargeRepos(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := Load(repo, plumbing.ZeroHash, DefaultGuess("guess"))
+		_, err := Load(repo, plumbing.ZeroHash, DefaultGuess("guess"), 1000)
 		if err != nil {
 			b.Fatal(err)
 		}

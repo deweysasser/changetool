@@ -14,6 +14,7 @@ import (
 )
 
 type Changelog struct {
+	MaxCommits             int               `short:"n" default:"1000" help:"max number of commits to check"`
 	SinceTag               string            `short:"s" help:"Tag from which to start" aliases:"since"`
 	DefaultType            changes.TypeTag   `default:"fix" help:"if type is not specified in commit, assume this type"`
 	GuessMissingCommitType bool              `default:"true" negatable:"" help:"If commit type is missing, take a guess about which it is"`
@@ -78,7 +79,7 @@ func (c *Changelog) CalculateChanges(r *git.Repository) (*changes.ChangeSet, err
 		}
 	}
 
-	return changes.Load(r, stopAt, guess)
+	return changes.Load(r, stopAt, guess, c.MaxCommits)
 }
 
 // guessType guesses the type of the commit from information in the commit

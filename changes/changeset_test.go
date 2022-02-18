@@ -24,7 +24,7 @@ func Test_Basic(t *testing.T) {
 
 	t.Run("full changelog", func(t *testing.T) {
 
-		cs, err := Load(r.Repository, plumbing.ZeroHash, DefaultGuess("guess"))
+		cs, err := Load(r.Repository, plumbing.ZeroHash, DefaultGuess("guess"), 1000)
 
 		if err != nil {
 			assert.FailNow(t, err.Error())
@@ -53,7 +53,7 @@ func Test_Basic(t *testing.T) {
 			assert.FailNow(t, "Failed to find tag v0.1")
 		}
 
-		cs, err := Load(r.Repository, ref.Hash(), DefaultGuess("guess"))
+		cs, err := Load(r.Repository, ref.Hash(), DefaultGuess("guess"), 1000)
 
 		if err != nil {
 			assert.FailNow(t, err.Error())
@@ -88,7 +88,7 @@ func Test_Breaking(t *testing.T) {
 
 	t.Run("full changelog", func(t *testing.T) {
 
-		cs, err := Load(r.Repository, plumbing.ZeroHash, DefaultGuess("guess"))
+		cs, err := Load(r.Repository, plumbing.ZeroHash, DefaultGuess("guess"), 1000)
 
 		if err != nil {
 			assert.FailNow(t, err.Error())
@@ -119,7 +119,7 @@ func Test_Guessing(t *testing.T) {
 				return t
 			}
 		}
-		cs, err := Load(r.Repository, plumbing.ZeroHash, guess)
+		cs, err := Load(r.Repository, plumbing.ZeroHash, guess, 1000)
 
 		if err != nil {
 			assert.FailNow(t, err.Error())

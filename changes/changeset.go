@@ -43,7 +43,7 @@ func DefaultGuess(tag TypeTag) CommitTypeGuesser {
 var commitType = regexp.MustCompile(`([a-zA-Z_][a-zA-Z_0-9]*)(\(([a-zA-Z_][a-zA-Z_0-9]*)\))?(!)?: *`)
 
 // Load creates a new CommitSet from a repository
-func Load(r *git.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser) (*ChangeSet, error) {
+func Load(r *git.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser, maxCommits int) (*ChangeSet, error) {
 	defer perf.Timer("Loading changes").Stop()
 
 	changeSet := NewChangeSet()
@@ -60,8 +60,9 @@ func Load(r *git.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser) (*Ch
 	defer iter.Close()
 
 	numChanges := 0
-
+	commitCount := 0
 	_ = iter.ForEach(func(commit *object.Commit) error {
+		commitCount++
 		if len(commit.ParentHashes) > 1 {
 			return nil
 		}
@@ -69,6 +70,8 @@ func Load(r *git.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser) (*Ch
 		log.Debug().
 			Str("stop_at", stopAt.String()[:6]).
 			Str("this_commit", commit.Hash.String()[:6]).
+			Int("commit_count", commitCount).
+			Int("max_commits", maxCommits).
 			Msg("Looking for stop point")
 
 		if commit.Hash == stopAt {
@@ -96,7 +99,14 @@ func Load(r *git.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser) (*Ch
 		if (len(re) > 4 && re[4] != "") || strings.Contains(message, "BREAKING CHANGE") {
 			changeSet.addBreaking(message)
 		}
-		return nil
+		switch {
+		case maxCommits < 0:
+			return nil
+		case commitCount >= maxCommits:
+			return storer.ErrStop
+		default:
+			return nil
+		}
 	})
 
 	log.Debug().
