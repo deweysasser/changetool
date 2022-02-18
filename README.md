@@ -1,17 +1,31 @@
 # changetool
 
-A tool for working with projects that use the [conventional commit](https://www.conventionalcommits.org/) conventions.
+A tool for working with projects that use the [conventional commits](https://www.conventionalcommits.org/).
+
+Generates changelogs and calculates semantic versions from tags and commit messages.
+
+## Quickstart
+
+Create a changelog: `changetool changelog --since-tag v1.0`
+
+Find the next semantic version: `changetool semver --from-tags`
+
+Update a file with the version: `changetool semver --from-tags --replace-in version.go`
 
 ## Status
 
-Experimental.  This seems to work, but I haven't put in good test cases.
+Becoming useful.
+
+This tool should be able to generate useful changelogs/release notes and do intelligent semantic version calculations.
+
+It still needs some work to be a low friction, very useful tool.  Suggestions on how to make it such are welcome.
 
 ## Overview
 
 This is a first, very simple, pass at a tool for working with conventional commits projects.
 
 The other tools that I've found are unsatisfactory in some way, either by having *way* too many
-dependencies (I'm looking gat you, Node based tools) or by producing output that I don't really want,
+dependencies (I'm looking at you, Node based tools) or by producing output that I don't really want,
 or by requiring templates and config in the project.
 
 ## Changelog generation
