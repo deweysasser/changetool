@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/deweysasser/changetool/changes"
+	"github.com/deweysasser/changetool/perf"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -51,7 +52,9 @@ func (c *Changelog) Run(program *Options) error {
 }
 
 func (c *Changelog) CalculateChanges(r *git.Repository) (*changes.ChangeSet, error) {
+	defer perf.Timer("Calculating Changes").Stop()
 
+	tagsTimer := perf.Timer("reading tags")
 	tags, err := r.Tags()
 	if err != nil {
 		return nil, err
@@ -63,6 +66,8 @@ func (c *Changelog) CalculateChanges(r *git.Repository) (*changes.ChangeSet, err
 	if err != nil {
 		return nil, err
 	}
+
+	tagsTimer.Stop()
 
 	var guess changes.CommitTypeGuesser
 	if c.GuessMissingCommitType {
@@ -89,6 +94,7 @@ func (c *Changelog) guessType(commit *object.Commit) changes.TypeTag {
 }
 
 func (c *Changelog) findStartVersion(tags storer.ReferenceIter) (stop plumbing.Hash, err error) {
+	defer perf.Timer("finding start version")
 	if c.SinceTag != "" {
 		lookFor := c.SinceTag
 

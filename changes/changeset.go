@@ -1,6 +1,7 @@
 package changes
 
 import (
+	"github.com/deweysasser/changetool/perf"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -43,6 +44,7 @@ var commitType = regexp.MustCompile(`([a-zA-Z_][a-zA-Z_0-9]*)(\(([a-zA-Z_][a-zA-
 
 // Load creates a new CommitSet from a repository
 func Load(r *git.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser) (*ChangeSet, error) {
+	defer perf.Timer("Loading changes").Stop()
 
 	changeSet := NewChangeSet()
 

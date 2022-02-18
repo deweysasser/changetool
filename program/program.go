@@ -35,6 +35,7 @@ func (program *Options) AfterApply() error {
 		program.OutFP = os.Stdout
 		return nil
 	} else {
+		log.Debug().Str("file", program.Output).Msg("Sending output")
 		fp, err := os.Create(program.Output)
 		if err != nil {
 			return err
@@ -47,6 +48,7 @@ func (program *Options) AfterApply() error {
 
 // Repository opens the git repository
 func (program *Options) Repository() (*git.Repository, error) {
+	log.Debug().Str("path", program.Path).Msg("Opening repository")
 	return git.PlainOpen(program.Path)
 }
 
