@@ -30,7 +30,7 @@ func CloneRepo(b *testing.B, repoPath, repoURL string, createdTagCount int) *git
 		log.Debug().Msg("Creating tags")
 		now = time.Now()
 		var commits []plumbing.Hash
-		if iter, err := repo.Log(&git.LogOptions{Order: git.LogOrderCommitterTime}); err != nil {
+		if iter, err := repo.Log(&git.LogOptions{}); err != nil {
 			b.Fatal(err)
 		} else {
 			if err := iter.ForEach(func(commit *object.Commit) error {
@@ -41,16 +41,17 @@ func CloneRepo(b *testing.B, repoPath, repoURL string, createdTagCount int) *git
 			}
 		}
 
-		log.Debug().Int("count", createdTagCount).Msg("Creating extra tags")
-		tagEvery := len(commits) / createdTagCount
-		for i := 0; i < len(commits); i += tagEvery {
-			if err := repo.Storer.SetReference(plumbing.NewHashReference(plumbing.ReferenceName(fmt.Sprintf("refs/tags/scale-test-tag-%d", i)), commits[i])); err != nil {
-				b.Fatal(err)
+		if createdTagCount > 0 {
+			log.Debug().Int("count", createdTagCount).Msg("Creating extra tags")
+			tagEvery := len(commits) / createdTagCount
+			for i := 0; i < len(commits); i += tagEvery {
+				if err := repo.Storer.SetReference(plumbing.NewHashReference(plumbing.ReferenceName(fmt.Sprintf("refs/tags/scale-test-tag-%d", i)), commits[i])); err != nil {
+					b.Fatal(err)
+				}
 			}
+
+			log.Debug().Dur("tag_time", time.Since(now)).Msg("Tags Created")
 		}
-
-		log.Debug().Dur("tag_time", time.Since(now)).Msg("Tags Created")
-
 		return repo
 	} else {
 		log.Debug().Msg("Using existing repo")
