@@ -19,8 +19,6 @@ func main() {
 		},
 	)
 
-	Options.Init()
-
 	// This ends up calling Options.Run()
 	if err := context.Run(); err != nil {
 		log.Err(err).Msg("Program failed")

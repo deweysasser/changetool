@@ -31,6 +31,8 @@ func (program *Options) Run(_ *Options) error {
 }
 
 func (program *Options) AfterApply() error {
+	program.Init()
+
 	if program.Output == "-" {
 		program.OutFP = os.Stdout
 		return nil
