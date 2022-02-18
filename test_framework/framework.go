@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"strconv"
-	"testing"
 )
 
 type GitOperation struct {
@@ -131,8 +130,12 @@ func (r MyRepo) RunCommit(op GitOperation, n int) error {
 	return nil
 }
 
+type Namer interface {
+	Name() string
+}
+
 // TestDir returns the appropriate test dir, creating it if necessary
-func TestDir(t *testing.T) string {
+func TestDir(t Namer) string {
 	base := path.Join("../test-output", t.Name())
 	info, err := os.Stat(base)
 	switch {
@@ -154,7 +157,7 @@ func TestDir(t *testing.T) string {
 }
 
 // NewFromTest returns a repo in an output directory, and the directory
-func NewFromTest(t *testing.T) (*MyRepo, error) {
+func NewFromTest(t Namer) (*MyRepo, error) {
 	return New(path.Join(TestDir(t), "repo"))
 }
 
