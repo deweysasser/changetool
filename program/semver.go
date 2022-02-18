@@ -20,8 +20,8 @@ type Semver struct {
 	AllowUntracked bool     `help:"allow untracked files to count as clean"`
 }
 
-func (s *Semver) Run() error {
-	r, err := git.PlainOpen(s.Path)
+func (s *Semver) Run(program *Options) error {
+	r, err := program.Repository()
 	if err != nil {
 		return err
 	}
@@ -40,17 +40,17 @@ func (s *Semver) Run() error {
 		s.SinceTag = foundTag
 	}
 
-	changes, err := s.CalculateChanges()
+	changeSet, err := s.CalculateChanges(r)
 	if err != nil {
 		return err
 	}
 
-	nextVersion, err2 := s.findNextVersion(version, r, changes)
+	nextVersion, err2 := s.findNextVersion(version, r, changeSet)
 	if err2 != nil {
 		return err2
 	}
 
-	fmt.Println(nextVersion.String())
+	_, _ = fmt.Fprintln(program.OutFP, nextVersion.String())
 
 	for _, f := range s.ReplaceIn {
 		if err = s.ReplaceInFile(f, version.String()); err != nil {

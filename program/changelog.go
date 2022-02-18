@@ -13,22 +13,26 @@ import (
 )
 
 type Changelog struct {
-	Path                   string            `default:"." short:"p" help:"Path for the git worktree/repo to log"`
 	SinceTag               string            `short:"s" help:"Tag from which to start" aliases:"since"`
 	DefaultType            changes.TypeTag   `default:"fix" help:"if type is not specified in commit, assume this type"`
 	GuessMissingCommitType bool              `default:"true" negatable:"" help:"If commit type is missing, take a guess about which it is"`
 	Order                  []changes.TypeTag `default:"${type_order}" help:"order in which to list commit message types"`
 }
 
-func (c *Changelog) Run() error {
+func (c *Changelog) Run(program *Options) error {
 
-	changeSet, err := c.CalculateChanges()
+	r, err := program.Repository()
+	if err != nil {
+		return err
+	}
+
+	changeSet, err := c.CalculateChanges(r)
 	if err != nil {
 		return err
 	}
 
 	for _, section := range changes.CommitEntries(c.Order, changeSet.Commits) {
-		fmt.Printf("%s:\n", section.Name)
+		_, _ = fmt.Fprintf(program.OutFP, "%s:\n", section.Name)
 
 		for _, commit := range section.Messages {
 			message := commit
@@ -36,21 +40,17 @@ func (c *Changelog) Run() error {
 				message = message[:len(message)-1]
 			}
 
-			fmt.Printf("   * %s", strings.ReplaceAll(message, "\n", "\n     "))
-			fmt.Println()
+			_, _ = fmt.Fprintf(program.OutFP, "   * %s", strings.ReplaceAll(message, "\n", "\n     "))
+			_, _ = fmt.Fprintln(program.OutFP)
 
 		}
-		fmt.Println()
+		_, _ = fmt.Fprintln(program.OutFP)
 	}
 
 	return nil
 }
 
-func (c *Changelog) CalculateChanges() (*changes.ChangeSet, error) {
-	r, err := git.PlainOpen(c.Path)
-	if err != nil {
-		return nil, err
-	}
+func (c *Changelog) CalculateChanges(r *git.Repository) (*changes.ChangeSet, error) {
 
 	tags, err := r.Tags()
 	if err != nil {

@@ -1,6 +1,7 @@
 package program
 
 import (
+	"github.com/go-git/go-git/v5"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -16,15 +17,37 @@ type Options struct {
 	Debug      bool       `short:"d" help:"Show debugging information"`
 	LogFormat  string     `short:"l" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
 	Quiet      bool       `short:"q" help:"Be less verbose than usual"`
+	Path       string     `default:"." type:"existingdir" short:"p" help:"Path for the git worktree/repo to log"`
+	Output     string     `default:"-" short:"o" help:"File to which to send output"`
+	OutFP      *os.File   `kong:"-"`
 	Changelog  Changelog  `cmd:""`
 	VersionCmd VersionCmd `name:"version" cmd:"" help:"show program version"`
 	Semver     Semver     `cmd:"" help:"Manipulate Semantic Versions"`
 }
 
 // Run runs the program
-func (program *Options) Run() error {
-
+func (program *Options) Run(_ *Options) error {
 	return nil
+}
+
+func (program *Options) AfterApply() error {
+	if program.Output == "-" {
+		program.OutFP = os.Stdout
+		return nil
+	} else {
+		fp, err := os.Create(program.Output)
+		if err != nil {
+			return err
+		}
+
+		program.OutFP = fp
+		return nil
+	}
+}
+
+// Repository opens the git repository
+func (program *Options) Repository() (*git.Repository, error) {
+	return git.PlainOpen(program.Path)
 }
 
 func (program *Options) Init() {
