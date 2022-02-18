@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 	"os"
+	"regexp"
 	"testing"
 )
 import "github.com/deweysasser/changetool/test_framework"
@@ -22,9 +23,23 @@ func Test_Basic(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Run("default changelog", func(t *testing.T) {
+
+		cs, err := Load(r.Repository, StopAtTagMatch(r.Repository, regexp.MustCompile(`v[0-9\.]+`).MatchString), DefaultGuess("guess"))
+
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+
+		assert.Equal(t, 1, len(cs.Commits))
+		assert.Equal(t, 0, len(cs.BreakingChanges))
+
+		writeYaml(t, cs)
+	})
+
 	t.Run("full changelog", func(t *testing.T) {
 
-		cs, err := Load(r.Repository, plumbing.ZeroHash, DefaultGuess("guess"), 1000)
+		cs, err := Load(r.Repository, StopAtCount(1000), DefaultGuess("guess"))
 
 		if err != nil {
 			assert.FailNow(t, err.Error())
@@ -53,7 +68,7 @@ func Test_Basic(t *testing.T) {
 			assert.FailNow(t, "Failed to find tag v0.1")
 		}
 
-		cs, err := Load(r.Repository, ref.Hash(), DefaultGuess("guess"), 1000)
+		cs, err := Load(r.Repository, StopAtHash(ref.Hash()), DefaultGuess("guess"))
 
 		if err != nil {
 			assert.FailNow(t, err.Error())
@@ -88,7 +103,7 @@ func Test_Breaking(t *testing.T) {
 
 	t.Run("full changelog", func(t *testing.T) {
 
-		cs, err := Load(r.Repository, plumbing.ZeroHash, DefaultGuess("guess"), 1000)
+		cs, err := Load(r.Repository, StopAtCount(1000), DefaultGuess("guess"))
 
 		if err != nil {
 			assert.FailNow(t, err.Error())
@@ -119,7 +134,7 @@ func Test_Guessing(t *testing.T) {
 				return t
 			}
 		}
-		cs, err := Load(r.Repository, plumbing.ZeroHash, guess, 1000)
+		cs, err := Load(r.Repository, StopAtCount(1000), guess)
 
 		if err != nil {
 			assert.FailNow(t, err.Error())

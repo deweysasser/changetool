@@ -4,7 +4,6 @@ import (
 	"github.com/deweysasser/changetool/perf"
 	"github.com/deweysasser/changetool/repo"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/rs/zerolog/log"
@@ -45,14 +44,11 @@ func DefaultGuess(tag TypeTag) CommitTypeGuesser {
 var commitType = regexp.MustCompile(`([a-zA-Z_][a-zA-Z_0-9]*)(\(([a-zA-Z_][a-zA-Z_0-9]*)\))?(!)?: *`)
 
 // Load creates a new CommitSet from a repository
-func Load(r *repo.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser, maxCommits int) (*ChangeSet, error) {
+func Load(r *repo.Repository, stopAt StopAt, guess CommitTypeGuesser) (*ChangeSet, error) {
 	defer perf.Timer("Loading changes").Stop()
 
 	changeSet := NewChangeSet()
 
-	log.Debug().
-		Str("stop_at", stopAt.String()[:6]).
-		Msg("Stopping at commit")
 	iter, err := r.Log(&git.LogOptions{Order: git.LogOrderCommitterTime})
 
 	if err != nil {
@@ -62,21 +58,16 @@ func Load(r *repo.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser, max
 	defer iter.Close()
 
 	numChanges := 0
-	commitCount := 0
 	_ = iter.ForEach(func(commit *object.Commit) error {
-		commitCount++
 		if len(commit.ParentHashes) > 1 {
 			return nil
 		}
 
 		log.Debug().
-			Str("stop_at", stopAt.String()[:6]).
 			Str("this_commit", commit.Hash.String()[:6]).
-			Int("commit_count", commitCount).
-			Int("max_commits", maxCommits).
 			Msg("Examining Commit")
 
-		if commit.Hash == stopAt {
+		if stopAt(commit) {
 			return storer.ErrStop
 		}
 
@@ -101,14 +92,8 @@ func Load(r *repo.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser, max
 		if (len(re) > 4 && re[4] != "") || strings.Contains(message, "BREAKING CHANGE") {
 			changeSet.addBreaking(message)
 		}
-		switch {
-		case maxCommits < 0:
-			return nil
-		case commitCount >= maxCommits:
-			return storer.ErrStop
-		default:
-			return nil
-		}
+
+		return nil
 	})
 
 	log.Debug().

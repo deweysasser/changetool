@@ -6,7 +6,9 @@ Generates changelogs and calculates semantic versions from tags and commit messa
 
 ## Quickstart
 
-Create a changelog: `changetool changelog --since-tag v1.0`
+Create a changelog since the last version tag: `changetool changelog`
+
+Create a changelog since a specific version tag: `changetool changelog --since-tag v1.0`
 
 Find the next semantic version: `changetool semver --from-tags`
 

@@ -1,12 +1,11 @@
 package program
 
 import (
-	"errors"
 	"fmt"
 	"github.com/deweysasser/changetool/changes"
 	"github.com/deweysasser/changetool/perf"
 	"github.com/deweysasser/changetool/repo"
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/deweysasser/changetool/versions"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rs/zerolog/log"
 	"strings"
@@ -15,6 +14,7 @@ import (
 type Changelog struct {
 	MaxCommits             int               `short:"n" default:"1000" help:"max number of commits to check"`
 	SinceTag               string            `short:"s" help:"Tag from which to start" aliases:"since"`
+	AllCommits             bool              `short:"a" help:"report changelog on all commits up to --max-commits.  Otherwise, report only to last version tag"`
 	DefaultType            changes.TypeTag   `default:"fix" help:"if type is not specified in commit, assume this type"`
 	GuessMissingCommitType bool              `default:"true" negatable:"" help:"If commit type is missing, take a guess about which it is"`
 	Order                  []changes.TypeTag `default:"${type_order}" help:"order in which to list commit message types"`
@@ -54,15 +54,6 @@ func (c *Changelog) Run(program *Options) error {
 func (c *Changelog) CalculateChanges(r *repo.Repository) (*changes.ChangeSet, error) {
 	defer perf.Timer("Calculating Changes").Stop()
 
-	tagsTimer := perf.Timer("reading tags")
-
-	stopAt, err := c.findStartVersion(r)
-	if err != nil {
-		return nil, err
-	}
-
-	tagsTimer.Stop()
-
 	var guess changes.CommitTypeGuesser
 	if c.GuessMissingCommitType {
 		guess = c.guessType
@@ -72,7 +63,11 @@ func (c *Changelog) CalculateChanges(r *repo.Repository) (*changes.ChangeSet, er
 		}
 	}
 
-	return changes.Load(r, stopAt, guess, c.MaxCommits)
+	if stopAt, err := c.findStopCriteria(r); err != nil {
+		return nil, err
+	} else {
+		return changes.Load(r, stopAt, guess)
+	}
 }
 
 // guessType guesses the type of the commit from information in the commit
@@ -87,15 +82,17 @@ func (c *Changelog) guessType(commit *object.Commit) changes.TypeTag {
 	return tag
 }
 
-func (c *Changelog) findStartVersion(r *repo.Repository) (stop plumbing.Hash, err error) {
-	defer perf.Timer("finding start version")
-	if c.SinceTag != "" {
+func (c *Changelog) findStopCriteria(r *repo.Repository) (stop changes.StopAt, err error) {
+	switch {
+	case c.SinceTag != "":
 		if hash, found := r.TagMap()[c.SinceTag]; !found {
-			return plumbing.ZeroHash, errors.New("unable to find desired tag " + c.SinceTag)
+			return nil, fmt.Errorf("unable to find start tag %s", c.SinceTag)
 		} else {
-			return hash, nil
+			return changes.StopAtHash(hash), nil
 		}
+	case c.AllCommits:
+		return changes.StopAtCount(c.MaxCommits), nil
+	default:
+		return changes.StopAtTagMatch(r, versions.SemverRegexp.MatchString), nil
 	}
-	return plumbing.ZeroHash, nil
-
 }
