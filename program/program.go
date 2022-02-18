@@ -1,7 +1,7 @@
 package program
 
 import (
-	"github.com/go-git/go-git/v5"
+	"github.com/deweysasser/changetool/repo"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -49,9 +49,9 @@ func (program *Options) AfterApply() error {
 }
 
 // Repository opens the git repository
-func (program *Options) Repository() (*git.Repository, error) {
+func (program *Options) Repository() (*repo.Repository, error) {
 	log.Debug().Str("path", program.Path).Msg("Opening repository")
-	return git.PlainOpen(program.Path)
+	return repo.New(program.Path)
 }
 
 func (program *Options) Init() {

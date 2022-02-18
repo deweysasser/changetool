@@ -2,6 +2,7 @@ package changes
 
 import (
 	"github.com/deweysasser/changetool/perf"
+	"github.com/deweysasser/changetool/repo"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -26,7 +27,8 @@ func (c *ChangeSet) addBreaking(message string) {
 	c.BreakingChanges = append(c.BreakingChanges, message)
 }
 
-func (c *ChangeSet) addCommit(tt TypeTag, section string, message string) {
+// TODO:  use the section (middle argument)
+func (c *ChangeSet) addCommit(tt TypeTag, _ string, message string) {
 	c.Commits[tt] = append(c.Commits[tt], message)
 }
 
@@ -43,7 +45,7 @@ func DefaultGuess(tag TypeTag) CommitTypeGuesser {
 var commitType = regexp.MustCompile(`([a-zA-Z_][a-zA-Z_0-9]*)(\(([a-zA-Z_][a-zA-Z_0-9]*)\))?(!)?: *`)
 
 // Load creates a new CommitSet from a repository
-func Load(r *git.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser, maxCommits int) (*ChangeSet, error) {
+func Load(r *repo.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser, maxCommits int) (*ChangeSet, error) {
 	defer perf.Timer("Loading changes").Stop()
 
 	changeSet := NewChangeSet()
@@ -72,7 +74,7 @@ func Load(r *git.Repository, stopAt plumbing.Hash, guess CommitTypeGuesser, maxC
 			Str("this_commit", commit.Hash.String()[:6]).
 			Int("commit_count", commitCount).
 			Int("max_commits", maxCommits).
-			Msg("Looking for stop point")
+			Msg("Examining Commit")
 
 		if commit.Hash == stopAt {
 			return storer.ErrStop

@@ -2,6 +2,7 @@ package test_framework
 
 import (
 	"fmt"
+	"github.com/deweysasser/changetool/repo"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -12,14 +13,14 @@ import (
 	"time"
 )
 
-func CloneRepo(b *testing.B, repoPath, repoURL string, createdTagCount int) *git.Repository {
+func CloneRepo(b *testing.B, repoPath, repoURL string, createdTagCount int) *repo.Repository {
 
 	if _, err := os.Stat(repoPath); os.IsNotExist(err) {
 		_ = os.MkdirAll(path.Dir(repoPath), os.ModePerm|os.ModeDir)
 		log.Debug().Str("url", repoURL).Msg("Cloning Repo")
 		now := time.Now()
 
-		repo, err := git.PlainClone(repoPath, true, &git.CloneOptions{URL: repoURL})
+		r, err := repo.FromRepository(git.PlainClone(repoPath, true, &git.CloneOptions{URL: repoURL}))
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -30,7 +31,7 @@ func CloneRepo(b *testing.B, repoPath, repoURL string, createdTagCount int) *git
 		log.Debug().Msg("Creating tags")
 		now = time.Now()
 		var commits []plumbing.Hash
-		if iter, err := repo.Log(&git.LogOptions{}); err != nil {
+		if iter, err := r.Log(&git.LogOptions{}); err != nil {
 			b.Fatal(err)
 		} else {
 			if err := iter.ForEach(func(commit *object.Commit) error {
@@ -45,18 +46,18 @@ func CloneRepo(b *testing.B, repoPath, repoURL string, createdTagCount int) *git
 			log.Debug().Int("count", createdTagCount).Msg("Creating extra tags")
 			tagEvery := len(commits) / createdTagCount
 			for i := 0; i < len(commits); i += tagEvery {
-				if err := repo.Storer.SetReference(plumbing.NewHashReference(plumbing.ReferenceName(fmt.Sprintf("refs/tags/scale-test-tag-%d", i)), commits[i])); err != nil {
+				if err := r.Storer.SetReference(plumbing.NewHashReference(plumbing.ReferenceName(fmt.Sprintf("refs/tags/scale-test-tag-%d", i)), commits[i])); err != nil {
 					b.Fatal(err)
 				}
 			}
 
 			log.Debug().Dur("tag_time", time.Since(now)).Msg("Tags Created")
 		}
-		return repo
+		return r
 	} else {
 		log.Debug().Msg("Using existing repo")
 
-		repo, err := git.PlainOpen(repoPath)
+		repo, err := repo.FromRepository(git.PlainOpen(repoPath))
 		if err != nil {
 			b.Fatal(err)
 		}

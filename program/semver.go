@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Masterminds/semver"
 	"github.com/deweysasser/changetool/changes"
+	"github.com/deweysasser/changetool/repo"
 	"github.com/deweysasser/changetool/versions"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -61,7 +62,7 @@ func (s *Semver) Run(program *Options) error {
 	return nil
 }
 
-func (s *Semver) findNextVersion(version semver.Version, r *git.Repository, changes *changes.ChangeSet) (semver.Version, error) {
+func (s *Semver) findNextVersion(version semver.Version, r *repo.Repository, changes *changes.ChangeSet) (semver.Version, error) {
 
 	status, head, err := s.gitWorktreeStatus(r)
 	if err != nil {
@@ -109,7 +110,7 @@ func (s *Semver) findNextVersion(version semver.Version, r *git.Repository, chan
 	}
 }
 
-func (s *Semver) gitWorktreeStatus(r *git.Repository) (git.Status, *plumbing.Reference, error) {
+func (s *Semver) gitWorktreeStatus(r *repo.Repository) (git.Status, *plumbing.Reference, error) {
 	log.Debug().Msg("Getting worktree")
 	w, err := r.Worktree()
 
@@ -151,7 +152,7 @@ func nextVersionFromChangeSet(changes *changes.ChangeSet, version semver.Version
 	return version
 }
 
-func (s *Semver) FindPreviousVersion(r *git.Repository) (semver.Version, string, error) {
+func (s *Semver) FindPreviousVersion(r *repo.Repository) (semver.Version, string, error) {
 	if s.FromTag {
 		return versions.FindPreviousVersionFromTag(r)
 	} else {

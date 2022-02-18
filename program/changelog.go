@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"github.com/deweysasser/changetool/changes"
 	"github.com/deweysasser/changetool/perf"
-	"github.com/go-git/go-git/v5"
+	"github.com/deweysasser/changetool/repo"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/rs/zerolog/log"
 	"strings"
 )
@@ -52,18 +51,12 @@ func (c *Changelog) Run(program *Options) error {
 	return nil
 }
 
-func (c *Changelog) CalculateChanges(r *git.Repository) (*changes.ChangeSet, error) {
+func (c *Changelog) CalculateChanges(r *repo.Repository) (*changes.ChangeSet, error) {
 	defer perf.Timer("Calculating Changes").Stop()
 
 	tagsTimer := perf.Timer("reading tags")
-	tags, err := r.Tags()
-	if err != nil {
-		return nil, err
-	}
 
-	defer tags.Close()
-
-	stopAt, err := c.findStartVersion(tags)
+	stopAt, err := c.findStartVersion(r)
 	if err != nil {
 		return nil, err
 	}
@@ -94,35 +87,15 @@ func (c *Changelog) guessType(commit *object.Commit) changes.TypeTag {
 	return tag
 }
 
-func (c *Changelog) findStartVersion(tags storer.ReferenceIter) (stop plumbing.Hash, err error) {
+func (c *Changelog) findStartVersion(r *repo.Repository) (stop plumbing.Hash, err error) {
 	defer perf.Timer("finding start version")
 	if c.SinceTag != "" {
-		lookFor := c.SinceTag
-
-		log.Debug().Str("tag", c.SinceTag).Msg("Looking for tag")
-		_ = tags.ForEach(func(t *plumbing.Reference) error {
-			name := t.Name().Short()
-			log.Debug().
-				Str("tag", name).Msg("comparing tag")
-			if name == lookFor {
-				log.Debug().
-					Str("tag", c.SinceTag).
-					Str("hash", t.Hash().String()).
-					Msg("Found hash for tag")
-
-				stop = t.Hash()
-				return storer.ErrStop
-			}
-
-			return nil
-		})
-
-		if stop == plumbing.ZeroHash {
-
-			err = errors.New("unable to find desired tag " + c.SinceTag)
-			return
+		if hash, found := r.TagMap()[c.SinceTag]; !found {
+			return plumbing.ZeroHash, errors.New("unable to find desired tag " + c.SinceTag)
+		} else {
+			return hash, nil
 		}
 	}
+	return plumbing.ZeroHash, nil
 
-	return
 }

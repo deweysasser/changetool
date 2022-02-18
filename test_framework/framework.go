@@ -3,6 +3,7 @@ package test_framework
 import (
 	"errors"
 	"fmt"
+	"github.com/deweysasser/changetool/repo"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/rs/zerolog/log"
@@ -19,7 +20,7 @@ type GitOperation struct {
 }
 
 type MyRepo struct {
-	*git.Repository
+	*repo.Repository
 	Path string
 }
 
@@ -170,7 +171,7 @@ func New(path string) (*MyRepo, error) {
 	if err != nil {
 		return nil, err
 	}
-	if repo, err := git.PlainInit(path, false); err != nil {
+	if repo, err := repo.FromRepository(git.PlainInit(path, false)); err != nil {
 		return nil, err
 	} else {
 		c, err := repo.Config()

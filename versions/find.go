@@ -3,6 +3,7 @@ package versions
 import (
 	"bufio"
 	"github.com/Masterminds/semver"
+	"github.com/deweysasser/changetool/repo"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -15,7 +16,7 @@ import (
 
 var SemverRegexp = regexp.MustCompile(`([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?`)
 
-func FindPreviousVersionFromTag(r *git.Repository) (version semver.Version, foundTag string, errReturn error) {
+func FindPreviousVersionFromTag(r *repo.Repository) (version semver.Version, foundTag string, errReturn error) {
 	version = semver.Version{}
 	allTags := make(map[plumbing.Hash]plumbing.ReferenceName)
 	log.Debug().Msg("finding previous version by examining tags")
