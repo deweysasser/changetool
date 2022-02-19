@@ -19,17 +19,8 @@ func TestChangeLog(t *testing.T) {
 	t.Run("Basic",
 		testChangelog(r.Path,
 			"",
-			`Feature:
-   * initial commit
-
-Fix:
-   * non-conventional commit comment
-
-Docs:
+			`Docs:
    * another non-conventional commit, this time of doc
-
-Chore:
-   * do nothing real
 
 `))
 
@@ -37,6 +28,23 @@ Chore:
 		testChangelog(r.Path,
 			"--since-tag v0.1",
 			`Docs:
+   * another non-conventional commit, this time of doc
+
+Chore:
+   * do nothing real
+
+`))
+
+	t.Run("All Commits",
+		testChangelog(r.Path,
+			"-a",
+			`Feature:
+   * initial commit
+
+Fix:
+   * non-conventional commit comment
+
+Docs:
    * another non-conventional commit, this time of doc
 
 Chore:

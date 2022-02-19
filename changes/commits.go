@@ -1,9 +1,11 @@
 package changes
 
 import (
+	"github.com/Masterminds/semver"
 	"github.com/deweysasser/changetool/repo"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/rs/zerolog/log"
 )
 
 // StopAt is a commit recognizer
@@ -40,6 +42,18 @@ func StopAtTagMatch(r *repo.Repository, matchString func(s string) bool) StopAt 
 	return func(commit *object.Commit) bool {
 		for _, tag := range r.ReverseTagMap()[commit.Hash] {
 			if matchString(tag) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+func StopAtFirstSemver(r *repo.Repository) StopAt {
+	return func(commit *object.Commit) bool {
+		for _, tag := range r.ReverseTagMap()[commit.Hash] {
+			log.Debug().Str("tag", tag).Msg("checking tag")
+			if _, err := semver.NewVersion(tag); err == nil {
 				return true
 			}
 		}

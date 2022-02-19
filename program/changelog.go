@@ -95,7 +95,7 @@ func (c *Changelog) findStopCriteria(r *repo.Repository) (stop changes.StopAt, e
 		log.Debug().Int("count", c.MaxCommits).Msg("stopping after # of commits")
 		return changes.StopAtCount(c.MaxCommits), nil
 	default:
-		log.Debug().Str("matches", versions.SemverRegexp.String()).Msg("stopping at matching tag")
-		return changes.StopAtTagMatch(r, versions.SemverRegexp.MatchString), nil
+		log.Debug().Str("matches", versions.SemverRegexp.String()).Msg("stopping at first recognizable semver")
+		return changes.StopAtFirstSemver(r), nil
 	}
 }
