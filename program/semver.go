@@ -18,6 +18,7 @@ type Semver struct {
 	Changelog
 	FromFile       string   `group:"source" xor:"source" required:"" type:"existingfile" help:"Set previous revision from the first semver looking string found in this file"`
 	ReplaceIn      []string `group:"locations" type:"existingfile" placeholder:"FILE" help:"Replace version in these files"`
+	Tag            bool     `group:"locations" short:"t" help:"run 'git tag' with the calculated semver"`
 	AllowUntracked bool     `group:"calculation" help:"allow untracked files to count as clean"`
 }
 
@@ -30,6 +31,21 @@ func (s *Semver) Run(program *Options) error {
 	nextVersion, err := s.getNextVersion(r)
 	if err != nil {
 		return err
+	}
+
+	if s.Tag {
+		head, err := r.Head()
+		if err != nil {
+			return err
+		}
+		_, err = r.CreateTag(
+			fmt.Sprintf("v%s", nextVersion.String()),
+			head.Hash(),
+			&git.CreateTagOptions{Message: fmt.Sprintf("Tag version %s", nextVersion.String())},
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	_, _ = fmt.Fprintln(program.OutFP, nextVersion.String())

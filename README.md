@@ -26,6 +26,11 @@ Update a file with the version:
 changetool semver --replace-in version.go
 ```
 
+Tag the project wth the calculated semantic version number
+```shell
+changetool semver --allow-untracked --tag
+```
+
 ## Status
 
 Becoming useful.
@@ -93,6 +98,7 @@ locations
   -o, --output="-"             File to which to send output
 
       --replace-in=FILE,...    Replace version in these files
+  -t, --tag                    run 'git tag' with the calculated semver
 
 source
   -n, --max-commits=1000    max number of commits to check
