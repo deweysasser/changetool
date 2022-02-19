@@ -27,7 +27,6 @@ func BenchmarkSemver_Run(b *testing.B) {
 
 		opts := Options{
 			Semver: Semver{
-				FromTag:        true,
 				AllowUntracked: true,
 			},
 			Path:   repoPath,

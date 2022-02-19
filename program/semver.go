@@ -16,7 +16,6 @@ import (
 
 type Semver struct {
 	Changelog
-	FromTag        bool     `group:"source" xor:"source" required:"" help:"Set semver from the last tag" `
 	FromFile       string   `group:"source" xor:"source" required:"" type:"existingfile" help:"Set previous revision from the first semver looking string found in this file"`
 	ReplaceIn      []string `type:"existingfile" placeholder:"FILE" help:"Replace version in these files"`
 	AllowUntracked bool     `help:"allow untracked files to count as clean"`
@@ -38,7 +37,7 @@ func (s *Semver) Run(program *Options) error {
 		Str("previous_version", version.String()).
 		Msg("Found previous version")
 
-	if s.FromTag && s.SinceTag == "" {
+	if s.SinceTag == "" {
 		s.SinceTag = foundTag
 	}
 
@@ -154,10 +153,10 @@ func nextVersionFromChangeSet(changes *changes.ChangeSet, version semver.Version
 }
 
 func (s *Semver) FindPreviousVersion(r *repo.Repository) (semver.Version, string, error) {
-	if s.FromTag {
-		return versions.FindPreviousVersionFromTag(r)
-	} else {
+	if s.FromFile != "" {
 		return versions.FindPreviousVersionFromFile(s.FromFile)
+	} else {
+		return versions.FindPreviousVersionFromTag(r)
 	}
 }
 

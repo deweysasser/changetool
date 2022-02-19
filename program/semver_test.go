@@ -107,21 +107,21 @@ func TestSemverPrerelease(t *testing.T) {
 
 	t.Run("Basic",
 		testSemver(r.Path,
-			"--from-tag",
+			"",
 			"0.2.0\n"))
 
 	must(t, r.RunCommit(test_framework.GitOperation{Message: "fix: added a fix"}, 0))
 
 	t.Run("With fix",
 		testSemver(r.Path,
-			"--from-tag",
+			"",
 			"0.2.1\n"))
 
 	must(t, r.RunCommit(test_framework.GitOperation{Message: "feat: added a feat"}, 0))
 
 	t.Run("With feat",
 		testSemver(r.Path,
-			"--from-tag",
+			"",
 			"0.3.0\n"))
 
 }
@@ -134,28 +134,28 @@ func TestSemverPostrelease(t *testing.T) {
 
 	t.Run("Basic",
 		testSemver(r.Path,
-			"--from-tag",
+			"",
 			"1.2.0\n"))
 
 	must(t, r.RunCommit(test_framework.GitOperation{Message: "fix: added a fix"}, 0))
 
 	t.Run("With fix",
 		testSemver(r.Path,
-			"--from-tag",
+			"",
 			"1.2.1\n"))
 
 	must(t, r.RunCommit(test_framework.GitOperation{Message: "feat: added a feat"}, 0))
 
 	t.Run("With feat",
 		testSemver(r.Path,
-			"--from-tag",
+			"",
 			"1.3.0\n"))
 
 	must(t, r.RunCommit(test_framework.GitOperation{Message: "feat!: break the world"}, 0))
 
 	t.Run("With feat",
 		testSemver(r.Path,
-			"--from-tag",
+			"",
 			"2.0.0\n"))
 
 }
