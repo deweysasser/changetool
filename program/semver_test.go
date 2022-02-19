@@ -12,6 +12,8 @@ import (
 	"testing"
 )
 
+// TODO:  add tests for worktree state
+
 func Test_SemverMastermind(t *testing.T) {
 
 	tests := []struct {
