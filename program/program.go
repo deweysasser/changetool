@@ -1,6 +1,8 @@
 package program
 
 import (
+	"github.com/alecthomas/kong"
+	"github.com/deweysasser/changetool/changes"
 	"github.com/deweysasser/changetool/repo"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -23,6 +25,21 @@ type Options struct {
 	Changelog  Changelog  `cmd:""`
 	VersionCmd VersionCmd `name:"version" cmd:"" help:"show program version"`
 	Semver     Semver     `cmd:"" help:"Manipulate Semantic Versions"`
+}
+
+// Parse calls the CLI parsing routines
+func (program *Options) Parse(args []string) (*kong.Context, error) {
+	parser, err := kong.New(program,
+		kong.Description("Brief Program Summary"),
+		kong.Vars{
+			"type_order": changes.TypesInOrder.Join(","),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return parser.Parse(args)
 }
 
 // Run runs the program

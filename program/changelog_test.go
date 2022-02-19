@@ -1,64 +1,25 @@
 package program
 
 import (
-	"bufio"
 	"github.com/deweysasser/changetool/test_framework"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path"
+	"strings"
 	"testing"
 )
 
-func SkipTestChangeLog(t *testing.T) {
-	dir := test_framework.TestDir(t)
-	output := path.Join(dir, "output.txt")
+func TestChangeLog(t *testing.T) {
 	r, err := test_framework.NewFromTest(t)
-	if err != nil {
-		assert.FailNow(t, err.Error())
-	}
+	must(t, err)
 
-	err = r.RunFile("../changes/changeset_test_Basic.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
+	must(t, r.RunFile("../changes/changeset_test_Basic.yaml"))
 
-	fp, err := os.Create(output)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	opts := Options{
-		Changelog: Changelog{},
-		Path:      r.Path,
-		OutFP:     fp,
-	}
-
-	opts.Changelog.Run(&opts)
-
-	fp.Close()
-
-	_, err = os.Stat(output)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	fp, err = os.Open(output)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer fp.Close()
-
-	scanner := bufio.NewScanner(fp)
-
-	lines := 0
-	for scanner.Scan() {
-		lines++
-	}
-
-	fp.Close()
-
-	expected := `Feature:
+	t.Run("Basic",
+		testChangelog(r.Path,
+			"",
+			`Feature:
    * initial commit
 
 Fix:
@@ -68,12 +29,69 @@ Docs:
    * another non-conventional commit, this time of doc
 
 Chore:
-   * do nothing real`
-	bytes, err := os.ReadFile(output)
+   * do nothing real
+
+`))
+
+	t.Run("Restricted tag",
+		testChangelog(r.Path,
+			"--since-tag v0.1",
+			`Docs:
+   * another non-conventional commit, this time of doc
+
+Chore:
+   * do nothing real
+
+`))
+
+}
+
+func testChangelog(repo, additionalArgs, expected string) func(t *testing.T) {
+	return func(t *testing.T) {
+		opts := Options{}
+		dir := test_framework.TestDir(t)
+		output := path.Join(dir, "output.txt")
+
+		args := []string{
+			"changelog",
+			"--path",
+			repo,
+			"--output",
+			output,
+		}
+
+		if additionalArgs != "" {
+			args = append(args, strings.Split(additionalArgs, " ")...)
+		}
+
+		log.Debug().Strs("args", args).Msg("Parsing")
+
+		context, err := opts.Parse(args)
+
+		must(t, err)
+
+		must(t, context.Run(&opts))
+
+		_, err = os.Stat(output)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		fp, err := os.Open(output)
+		must(t, err)
+
+		defer fp.Close()
+
+		bytes, err := os.ReadFile(output)
+		must(t, err)
+
+		assert.Equal(t, expected, string(bytes))
+	}
+}
+
+func must(t *testing.T, err error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	assert.Equal(t, 20, lines)
-	assert.Equal(t, expected, string(bytes))
 }
