@@ -3,7 +3,12 @@ package program
 import (
 	"github.com/Masterminds/semver"
 	"github.com/deweysasser/changetool/changes"
+	"github.com/deweysasser/changetool/test_framework"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	"os"
+	"path"
+	"strings"
 	"testing"
 )
 
@@ -91,5 +96,110 @@ func Test_nextVersionFromChangeset(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, nextVersionFromChangeSet(tt.changes, tt.version), "nextVersionFromChangeSet(%v, %v)", tt.changes, tt.version)
 		})
+	}
+}
+
+func TestSemverPrerelease(t *testing.T) {
+	r, err := test_framework.NewFromTest(t)
+	must(t, err)
+
+	must(t, r.RunFile("../changes/changeset_test_Basic.yaml"))
+
+	t.Run("Basic",
+		testSemver(r.Path,
+			"--from-tag",
+			"0.2.0\n"))
+
+	must(t, r.RunCommit(test_framework.GitOperation{Message: "fix: added a fix"}, 0))
+
+	t.Run("With fix",
+		testSemver(r.Path,
+			"--from-tag",
+			"0.2.1\n"))
+
+	must(t, r.RunCommit(test_framework.GitOperation{Message: "feat: added a feat"}, 0))
+
+	t.Run("With feat",
+		testSemver(r.Path,
+			"--from-tag",
+			"0.3.0\n"))
+
+}
+
+func TestSemverPostrelease(t *testing.T) {
+	r, err := test_framework.NewFromTest(t)
+	must(t, err)
+
+	must(t, r.RunFile("../versions/release-repo.yaml"))
+
+	t.Run("Basic",
+		testSemver(r.Path,
+			"--from-tag",
+			"1.2.0\n"))
+
+	must(t, r.RunCommit(test_framework.GitOperation{Message: "fix: added a fix"}, 0))
+
+	t.Run("With fix",
+		testSemver(r.Path,
+			"--from-tag",
+			"1.2.1\n"))
+
+	must(t, r.RunCommit(test_framework.GitOperation{Message: "feat: added a feat"}, 0))
+
+	t.Run("With feat",
+		testSemver(r.Path,
+			"--from-tag",
+			"1.3.0\n"))
+
+	must(t, r.RunCommit(test_framework.GitOperation{Message: "feat!: break the world"}, 0))
+
+	t.Run("With feat",
+		testSemver(r.Path,
+			"--from-tag",
+			"2.0.0\n"))
+
+}
+
+func testSemver(repo, additionalArgs, expected string) func(t *testing.T) {
+	return func(t *testing.T) {
+		opts := Options{}
+		dir := test_framework.TestDir(t)
+		output := path.Join(dir, "output.txt")
+
+		args := []string{
+			"semver",
+			"--path",
+			repo,
+			"--output",
+			output,
+		}
+
+		if additionalArgs != "" {
+			args = append(args, strings.Split(additionalArgs, " ")...)
+		}
+
+		log.Debug().Strs("args", args).Msg("Parsing")
+
+		context, err := opts.Parse(args)
+
+		must(t, err)
+
+		must(t, context.Run(&opts))
+
+		_, err = os.Stat(output)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		fp, err := os.Open(output)
+		must(t, err)
+
+		defer fp.Close()
+
+		bytes, err := os.ReadFile(output)
+		must(t, err)
+
+		assert.Equal(t, expected, string(bytes))
 	}
 }
