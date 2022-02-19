@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+// TODO:  put in test for tags on merge commits
+
 func TestChangeLog(t *testing.T) {
 	r, err := test_framework.NewFromTest(t)
 	must(t, err)

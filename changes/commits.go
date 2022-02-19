@@ -54,6 +54,10 @@ func StopAtFirstSemver(r *repo.Repository) StopAt {
 		for _, tag := range r.ReverseTagMap()[commit.Hash] {
 			log.Debug().Str("tag", tag).Msg("checking tag")
 			if _, err := semver.NewVersion(tag); err == nil {
+				log.Debug().
+					Str("hash", commit.Hash.String()[:6]).
+					Str("tag", tag).
+					Msg("Stopping at tagged commit")
 				return true
 			}
 		}

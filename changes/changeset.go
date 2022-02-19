@@ -59,9 +59,6 @@ func Load(r *repo.Repository, stopAt StopAt, guess CommitTypeGuesser) (*ChangeSe
 
 	numChanges := 0
 	_ = iter.ForEach(func(commit *object.Commit) error {
-		if len(commit.ParentHashes) > 1 {
-			return nil
-		}
 
 		log.Debug().
 			Str("this_commit", commit.Hash.String()[:6]).
@@ -69,6 +66,10 @@ func Load(r *repo.Repository, stopAt StopAt, guess CommitTypeGuesser) (*ChangeSe
 
 		if stopAt(commit) {
 			return storer.ErrStop
+		}
+
+		if len(commit.ParentHashes) > 1 {
+			return nil
 		}
 
 		numChanges++

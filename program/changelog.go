@@ -5,7 +5,6 @@ import (
 	"github.com/deweysasser/changetool/changes"
 	"github.com/deweysasser/changetool/perf"
 	"github.com/deweysasser/changetool/repo"
-	"github.com/deweysasser/changetool/versions"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rs/zerolog/log"
 	"strings"
@@ -95,7 +94,8 @@ func (c *Changelog) findStopCriteria(r *repo.Repository) (stop changes.StopAt, e
 		log.Debug().Int("count", c.MaxCommits).Msg("stopping after # of commits")
 		return changes.StopAtCount(c.MaxCommits), nil
 	default:
-		log.Debug().Str("matches", versions.SemverRegexp.String()).Msg("stopping at first recognizable semver")
+		log.Debug().
+			Msg("stopping at first recognizable semver")
 		return changes.StopAtFirstSemver(r), nil
 	}
 }
