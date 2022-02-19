@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Masterminds/semver"
 	"github.com/deweysasser/changetool/changes"
+	"github.com/deweysasser/changetool/perf"
 	"github.com/deweysasser/changetool/repo"
 	"github.com/deweysasser/changetool/versions"
 	"github.com/go-git/go-git/v5"
@@ -111,7 +112,7 @@ func (s *Semver) findNextVersion(version semver.Version, r *repo.Repository, cha
 }
 
 func (s *Semver) gitWorktreeStatus(r *repo.Repository) (git.Status, *plumbing.Reference, error) {
-	log.Debug().Msg("Getting worktree")
+	defer perf.Timer("getting worktree status").Stop()
 	w, err := r.Worktree()
 
 	if err != nil {

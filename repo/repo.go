@@ -1,18 +1,18 @@
 package repo
 
 import (
+	"github.com/deweysasser/changetool/perf"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rs/zerolog/log"
 	"sync"
 )
 
 type Repository struct {
 	*git.Repository
-	tags        map[string]plumbing.Hash
-	reverseTags map[plumbing.Hash][]string
-	filled      sync.Once
+	tagToCommitHash  map[string]plumbing.Hash
+	commitHashToTags map[plumbing.Hash][]string
+	filled           sync.Once
 }
 
 func New(path string) (*Repository, error) {
@@ -30,20 +30,20 @@ func FromRepository(r *git.Repository, err error) (*Repository, error) {
 func (r *Repository) TagMap() map[string]plumbing.Hash {
 	r.filled.Do(r.fillTags)
 
-	return r.tags
+	return r.tagToCommitHash
 }
 
 func (r *Repository) ReverseTagMap() map[plumbing.Hash][]string {
 	r.filled.Do(r.fillTags)
 
-	return r.reverseTags
+	return r.commitHashToTags
 }
 
 func (r *Repository) fillTags() {
-	log.Debug().Msg("filling tags map")
+	defer perf.Timer("filling tagToCommitHash map").Stop()
 
-	r.tags = make(map[string]plumbing.Hash)
-	r.reverseTags = make(map[plumbing.Hash][]string)
+	r.tagToCommitHash = make(map[string]plumbing.Hash)
+	r.commitHashToTags = make(map[plumbing.Hash][]string)
 
 	if tagRefs, err := r.Tags(); err != nil {
 		log.Err(err).Msg("error reading tag references")
@@ -54,30 +54,23 @@ func (r *Repository) fillTags() {
 			name := t.Name().Short()
 			hash := t.Hash()
 
-			r.tags[name] = hash
-			r.reverseTags[hash] = append(r.reverseTags[hash], name)
-
-			return nil
-		}); err != nil {
-			log.Err(err).Msg("error iterating tag references")
-		}
-	}
-
-	if tagObjects, err := r.TagObjects(); err != nil {
-		log.Err(err).Msg("error reading tag objects")
-	} else {
-		if err := tagObjects.ForEach(func(tag *object.Tag) error {
-			name := tag.Name
-			if commit, err := tag.Commit(); err != nil {
-				log.Err(err).Str("tag_name", name).Msg("Error reading tag object")
-			} else {
-				hash := commit.Hash
-				r.tags[name] = hash
-				r.reverseTags[hash] = append(r.reverseTags[hash], name)
+			// If it's a tag object, resolve it to the commit it's pointing to
+			if tag, err := r.TagObject(hash); err == nil {
+				hash = tag.Target
 			}
+
+			log.Debug().
+				Str("tag", name).
+				Str("hash", hash.String()[:6]).
+				Msg("Examining tag")
+
+			r.tagToCommitHash[name] = hash
+			r.commitHashToTags[hash] = append(r.commitHashToTags[hash], name)
+
 			return nil
 		}); err != nil {
 			log.Err(err).Msg("error iterating tag references")
 		}
 	}
+
 }

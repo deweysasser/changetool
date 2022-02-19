@@ -1,6 +1,7 @@
 package changes
 
 import (
+	"github.com/deweysasser/changetool/repo"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rs/zerolog/log"
@@ -13,19 +14,21 @@ import (
 import "github.com/deweysasser/changetool/test_framework"
 
 func Test_Basic(t *testing.T) {
-	r, err := test_framework.NewFromTest(t)
+	r1, err := test_framework.NewFromTest(t)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
 
-	err = r.RunFile("changeset_test_Basic.yaml")
+	err = r1.RunFile("changeset_test_Basic.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	r, _ := repo.FromRepository(r1.Repository, nil)
+
 	t.Run("default changelog", func(t *testing.T) {
 
-		cs, err := Load(r.Repository, StopAtTagMatch(r.Repository, regexp.MustCompile(`v[0-9\.]+`).MatchString), DefaultGuess("guess"))
+		cs, err := Load(r, StopAtTagMatch(r, regexp.MustCompile(`v[0-9\.]+`).MatchString), DefaultGuess("guess"))
 
 		if err != nil {
 			assert.FailNow(t, err.Error())
@@ -39,7 +42,7 @@ func Test_Basic(t *testing.T) {
 
 	t.Run("full changelog", func(t *testing.T) {
 
-		cs, err := Load(r.Repository, StopAtCount(1000), DefaultGuess("guess"))
+		cs, err := Load(r, StopAtCount(1000), DefaultGuess("guess"))
 
 		if err != nil {
 			assert.FailNow(t, err.Error())
@@ -68,7 +71,7 @@ func Test_Basic(t *testing.T) {
 			assert.FailNow(t, "Failed to find tag v0.1")
 		}
 
-		cs, err := Load(r.Repository, StopAtHash(ref.Hash()), DefaultGuess("guess"))
+		cs, err := Load(r, StopAtHash(ref.Hash()), DefaultGuess("guess"))
 
 		if err != nil {
 			assert.FailNow(t, err.Error())
@@ -88,22 +91,24 @@ func must(t *testing.T, err error) {
 }
 
 func Test_Breaking(t *testing.T) {
-	r, err := test_framework.NewFromTest(t)
+	r1, err := test_framework.NewFromTest(t)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
 
-	must(t, r.RunFile("changeset_test_Basic.yaml"))
+	must(t, r1.RunFile("changeset_test_Basic.yaml"))
 	// Add in a breaking change
-	must(t, r.Run([]test_framework.GitOperation{
+	must(t, r1.Run([]test_framework.GitOperation{
 		{
 			Message: "feat!: something that breaks",
 		},
 	}))
 
+	r, _ := repo.FromRepository(r1.Repository, nil)
+
 	t.Run("full changelog", func(t *testing.T) {
 
-		cs, err := Load(r.Repository, StopAtCount(1000), DefaultGuess("guess"))
+		cs, err := Load(r, StopAtCount(1000), DefaultGuess("guess"))
 
 		if err != nil {
 			assert.FailNow(t, err.Error())
@@ -118,12 +123,14 @@ func Test_Breaking(t *testing.T) {
 }
 
 func Test_Guessing(t *testing.T) {
-	r, err := test_framework.NewFromTest(t)
+	r1, err := test_framework.NewFromTest(t)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}
 
-	must(t, r.RunFile("changeset_test_Basic.yaml"))
+	must(t, r1.RunFile("changeset_test_Basic.yaml"))
+
+	r, _ := repo.FromRepository(r1.Repository, nil)
 
 	t.Run("full changelog guess", func(t *testing.T) {
 
@@ -134,7 +141,7 @@ func Test_Guessing(t *testing.T) {
 				return t
 			}
 		}
-		cs, err := Load(r.Repository, StopAtCount(1000), guess)
+		cs, err := Load(r, StopAtCount(1000), guess)
 
 		if err != nil {
 			assert.FailNow(t, err.Error())

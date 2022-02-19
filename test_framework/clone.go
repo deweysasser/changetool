@@ -2,7 +2,6 @@ package test_framework
 
 import (
 	"fmt"
-	"github.com/deweysasser/changetool/repo"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -13,14 +12,14 @@ import (
 	"time"
 )
 
-func CloneRepo(b *testing.B, repoPath, repoURL string, createdTagCount int) *repo.Repository {
+func CloneRepo(b *testing.B, repoPath, repoURL string, createdTagCount int) *git.Repository {
 
 	if _, err := os.Stat(repoPath); os.IsNotExist(err) {
 		_ = os.MkdirAll(path.Dir(repoPath), os.ModePerm|os.ModeDir)
 		log.Debug().Str("url", repoURL).Msg("Cloning Repo")
 		now := time.Now()
 
-		r, err := repo.FromRepository(git.PlainClone(repoPath, true, &git.CloneOptions{URL: repoURL}))
+		r, err := git.PlainClone(repoPath, false, &git.CloneOptions{URL: repoURL})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -57,7 +56,7 @@ func CloneRepo(b *testing.B, repoPath, repoURL string, createdTagCount int) *rep
 	} else {
 		log.Debug().Msg("Using existing repo")
 
-		repo, err := repo.FromRepository(git.PlainOpen(repoPath))
+		repo, err := git.PlainOpen(repoPath)
 		if err != nil {
 			b.Fatal(err)
 		}

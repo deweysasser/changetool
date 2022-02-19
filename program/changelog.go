@@ -88,11 +88,14 @@ func (c *Changelog) findStopCriteria(r *repo.Repository) (stop changes.StopAt, e
 		if hash, found := r.TagMap()[c.SinceTag]; !found {
 			return nil, fmt.Errorf("unable to find start tag %s", c.SinceTag)
 		} else {
+			log.Debug().Str("tag", c.SinceTag).Msg("Stopping at tag")
 			return changes.StopAtHash(hash), nil
 		}
 	case c.AllCommits:
+		log.Debug().Int("count", c.MaxCommits).Msg("stopping after # of commits")
 		return changes.StopAtCount(c.MaxCommits), nil
 	default:
+		log.Debug().Str("matches", versions.SemverRegexp.String()).Msg("stopping at matching tag")
 		return changes.StopAtTagMatch(r, versions.SemverRegexp.MatchString), nil
 	}
 }
