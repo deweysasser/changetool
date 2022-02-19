@@ -17,8 +17,8 @@ import (
 type Semver struct {
 	Changelog
 	FromFile       string   `group:"source" xor:"source" required:"" type:"existingfile" help:"Set previous revision from the first semver looking string found in this file"`
-	ReplaceIn      []string `type:"existingfile" placeholder:"FILE" help:"Replace version in these files"`
-	AllowUntracked bool     `help:"allow untracked files to count as clean"`
+	ReplaceIn      []string `group:"locations" type:"existingfile" placeholder:"FILE" help:"Replace version in these files"`
+	AllowUntracked bool     `group:"calculation" help:"allow untracked files to count as clean"`
 }
 
 func (s *Semver) Run(program *Options) error {
@@ -27,10 +27,27 @@ func (s *Semver) Run(program *Options) error {
 		return err
 	}
 
+	nextVersion, err := s.getNextVersion(r)
+	if err != nil {
+		return err
+	}
+
+	_, _ = fmt.Fprintln(program.OutFP, nextVersion.String())
+
+	for _, f := range s.ReplaceIn {
+		if err = s.ReplaceInFile(f, nextVersion.String()); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Semver) getNextVersion(r *repo.Repository) (semver.Version, error) {
 	version, foundTag, err := s.FindPreviousVersion(r)
 
 	if err != nil {
-		return err
+		return semver.Version{}, err
 	}
 
 	log.Debug().
@@ -43,23 +60,15 @@ func (s *Semver) Run(program *Options) error {
 
 	changeSet, err := s.CalculateChanges(r)
 	if err != nil {
-		return err
+		return semver.Version{}, err
 	}
 
 	nextVersion, err2 := s.findNextVersion(version, r, changeSet)
+
 	if err2 != nil {
-		return err2
+		return semver.Version{}, err2
 	}
-
-	_, _ = fmt.Fprintln(program.OutFP, nextVersion.String())
-
-	for _, f := range s.ReplaceIn {
-		if err = s.ReplaceInFile(f, version.String()); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return nextVersion, nil
 }
 
 func (s *Semver) findNextVersion(version semver.Version, r *repo.Repository, changes *changes.ChangeSet) (semver.Version, error) {

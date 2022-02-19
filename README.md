@@ -6,13 +6,25 @@ Generates changelogs and calculates semantic versions from tags and commit messa
 
 ## Quickstart
 
-Create a changelog since the last version tag: `changetool changelog`
+Create a changelog since the last version tag: 
+```shell
+changetool changelog
+```
 
-Create a changelog since a specific version tag: `changetool changelog --since-tag v1.0`
+Create a changelog since a specific version tag: 
+```shell
+changetool changelog --since-tag v1.0
+```
 
-Find the next semantic version: `changetool semver --from-tags`
+Find the next semantic version, based on changelog: 
+```shell
+changetool semver
+```
 
-Update a file with the version: `changetool semver --from-tags --replace-in version.go`
+Update a file with the version: 
+```shell
+changetool semver --replace-in version.go
+```
 
 ## Status
 
@@ -35,61 +47,63 @@ or by requiring templates and config in the project.
 ```text
 Usage: changetool changelog
 
-Flags:
-  -h, --help                              Show context-sensitive help.
-  -d, --debug                             Show debugging information
-  -l, --log-format="auto"                 How to show program output (auto|terminal|jsonl)
-  -q, --quiet                             Be less verbose than usual
+calculate changelogs
 
-  -p, --path="."                          Path for the git worktree/repo to log
-  -s, --since-tag=STRING                  Tag from which to start
-      --default-type="fix"                if type is not specified in commit, assume this type
-      --[no-]guess-missing-commit-type    If commit type is missing, take a guess about which it is
-      --order=feat,fix,test,docs,build,refactor,chore,...
-                                          order in which to list commit message types
-  ```
+Flags:
+  -h, --help    Show context-sensitive help.
+
+info
+  -d, --debug                Show debugging information
+  -l, --log-format="auto"    How to show program output (auto|terminal|jsonl)
+  -q, --quiet                Be less verbose than usual
+
+locations
+  -p, --path="."      Path for the git worktree/repo to log
+  -o, --output="-"    File to which to send output
+
+source
+  -n, --max-commits=1000    max number of commits to check
+  -s, --since-tag=STRING    Tag from which to start
+  -a, --all-commits         report changelog on all commits up to --max-commits. Otherwise, report only to last version tag
+
+calculation
+  --default-type="fix"                if type is not specified in commit, assume this type
+  --[no-]guess-missing-commit-type    If commit type is missing, take a guess about which it is
+  --order=feat,fix,test,docs,build,refactor,chore,...
+                                      order in which to list commit message types
+```
 
 ## Semantic Versioning
 
 ```text
-Usage: changetool semver --from-tag --from-file=STRING
+Usage: changetool semver --from-file=STRING
 
 Manipulate Semantic Versions
 
 Flags:
-  -h, --help                              Show context-sensitive help.
-  -d, --debug                             Show debugging information
-  -l, --log-format="auto"                 How to show program output (auto|terminal|jsonl)
-  -q, --quiet                             Be less verbose than usual
+  -h, --help    Show context-sensitive help.
 
-  -p, --path="."                          Path for the git worktree/repo to log
-  -s, --since-tag=STRING                  Tag from which to start
-      --default-type="fix"                if type is not specified in commit, assume this type
-      --[no-]guess-missing-commit-type    If commit type is missing, take a guess about which it is
-      --order=feat,fix,test,docs,build,refactor,chore,...
-                                          order in which to list commit message types
-      --replace-in=REPLACE-IN,...         Replace version in these files
-      --allow-untracked                   allow untracked files to count as clean
+info
+  -d, --debug                Show debugging information
+  -l, --log-format="auto"    How to show program output (auto|terminal|jsonl)
+  -q, --quiet                Be less verbose than usual
+
+locations
+  -p, --path="."               Path for the git worktree/repo to log
+  -o, --output="-"             File to which to send output
+
+      --replace-in=FILE,...    Replace version in these files
 
 source
-  --from-tag            Set semver from the last tag
-  --from-file=STRING    Set previous revision from the first semver looking string found in this file
-```
+  -n, --max-commits=1000    max number of commits to check
+  -s, --since-tag=STRING    Tag from which to start
+  -a, --all-commits         report changelog on all commits up to --max-commits. Otherwise, report only to last version tag
+      --from-file=STRING    Set previous revision from the first semver looking string found in this file
 
-## Examples
-
-Generate a changelog since version 1.2
-
-```text
-changetool changelog --since-tag v1.2
-```
-
-Find out the next version
-```text
-changetool semver --from-tag
-```
-
-Replace a file with the next version tag
-```text
-changetool semver --from-tag --replace-in version.txt
+calculation
+  --default-type="fix"                if type is not specified in commit, assume this type
+  --[no-]guess-missing-commit-type    If commit type is missing, take a guess about which it is
+  --order=feat,fix,test,docs,build,refactor,chore,...
+                                      order in which to list commit message types
+  --allow-untracked                   allow untracked files to count as clean
 ```

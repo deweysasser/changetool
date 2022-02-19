@@ -12,12 +12,12 @@ import (
 )
 
 type Changelog struct {
-	MaxCommits             int               `short:"n" default:"1000" help:"max number of commits to check"`
-	SinceTag               string            `short:"s" help:"Tag from which to start" aliases:"since"`
-	AllCommits             bool              `short:"a" help:"report changelog on all commits up to --max-commits.  Otherwise, report only to last version tag"`
-	DefaultType            changes.TypeTag   `default:"fix" help:"if type is not specified in commit, assume this type"`
-	GuessMissingCommitType bool              `default:"true" negatable:"" help:"If commit type is missing, take a guess about which it is"`
-	Order                  []changes.TypeTag `default:"${type_order}" help:"order in which to list commit message types"`
+	MaxCommits             int               `short:"n" group:"source" default:"1000" help:"max number of commits to check"`
+	SinceTag               string            `short:"s" group:"source" help:"Tag from which to start" aliases:"since"`
+	AllCommits             bool              `short:"a" group:"source" help:"report changelog on all commits up to --max-commits.  Otherwise, report only to last version tag"`
+	DefaultType            changes.TypeTag   `default:"fix" group:"calculation" help:"if type is not specified in commit, assume this type"`
+	GuessMissingCommitType bool              `default:"true" group:"calculation" negatable:"" help:"If commit type is missing, take a guess about which it is"`
+	Order                  []changes.TypeTag `default:"${type_order}" group:"calculation" help:"order in which to list commit message types"`
 }
 
 func (c *Changelog) Run(program *Options) error {

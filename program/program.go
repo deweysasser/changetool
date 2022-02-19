@@ -16,15 +16,18 @@ var Version = "unknown"
 
 // Options is the structure of program options
 type Options struct {
-	Debug      bool       `short:"d" help:"Show debugging information"`
-	LogFormat  string     `short:"l" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
-	Quiet      bool       `short:"q" help:"Be less verbose than usual"`
-	Path       string     `default:"." type:"existingdir" short:"p" help:"Path for the git worktree/repo to log"`
-	Output     string     `default:"-" short:"o" help:"File to which to send output"`
-	OutFP      *os.File   `kong:"-"`
-	Changelog  Changelog  `cmd:""`
+	Debug     bool   `short:"d" group:"info" help:"Show debugging information"`
+	LogFormat string `short:"l" group:"info" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
+	Quiet     bool   `short:"q" group:"info" help:"Be less verbose than usual"`
+
+	Path   string `default:"." group:"locations" type:"existingdir" short:"p" help:"Path for the git worktree/repo to log"`
+	Output string `default:"-" group:"locations" short:"o" help:"File to which to send output"`
+
+	Changelog  Changelog  `cmd:"" help:"calculate changelogs"`
 	VersionCmd VersionCmd `name:"version" cmd:"" help:"show program version"`
 	Semver     Semver     `cmd:"" help:"Manipulate Semantic Versions"`
+
+	OutFP *os.File `kong:"-"`
 }
 
 // Parse calls the CLI parsing routines
