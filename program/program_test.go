@@ -20,13 +20,14 @@ func TestOptions_Run(t *testing.T) {
 
 	out := capturer.CaptureStdout(func() {
 
-		_, err := program.Parse([]string{"--version"})
+		c, err := program.Parse([]string{"version"})
 
 		assert.NoError(t, err)
 
-		// version output is done as part of parsing, so we don't need to run the program
+		c.Run(&program)
 	})
 
-	assert.Equal(t, exitValue, 0)
+	// VersionCmd does not explicitly call os.Exit
+	assert.Equal(t, -1, exitValue)
 	assert.Equal(t, "unknown\n", out)
 }
