@@ -1,21 +1,24 @@
 package main
 
 import (
-	"github.com/alecthomas/kong"
 	"github.com/deweysasser/golang-program/program"
 	"github.com/rs/zerolog/log"
+	"os"
 )
 
 func main() {
 
-	var Options program.Options
+	var options program.Options
 
-	context := kong.Parse(&Options,
-		kong.Description("Brief Program Summary"),
-	)
+	context, err := options.Parse(os.Args[1:])
 
-	// This ends up calling Options.Run()
+	if err != nil {
+		os.Exit(1)
+	}
+
+	// This ends up calling options.Run()
 	if err := context.Run(); err != nil {
 		log.Err(err).Msg("Program failed")
+		os.Exit(1)
 	}
 }

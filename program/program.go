@@ -2,6 +2,7 @@ package program
 
 import (
 	"fmt"
+	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -14,16 +15,31 @@ var Version = "unknown"
 
 // Options is the structure of program options
 type Options struct {
-	Debug     bool   `short:"d" help:"Show debugging information"`
-	Version   bool   `short:"v" help:"Show program version"`
-	LogFormat string `short:"l" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
-	Quiet     bool   `short:"q" help:"Be less verbose than usual"`
+	Debug        bool   `help:"Show debugging information"`
+	Version      bool   `help:"Show program version"`
+	OutputFormat string `enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
+	Quiet        bool   `help:"Be less verbose than usual"`
+}
+
+// Parse calls the CLI parsing routines
+func (program *Options) Parse(args []string) (*kong.Context, error) {
+	parser, err := kong.New(program) // kong.Description("Brief Program Summary"),
+
+	if err != nil {
+		return nil, err
+	}
+
+	return parser.Parse(args)
 }
 
 // Run runs the program
 func (program *Options) Run() error {
-	program.initLogging()
+	return nil
+}
 
+// AfterApply runs after the options are parsed but before anything runs
+func (program *Options) AfterApply() error {
+	program.initLogging()
 	return nil
 }
 
@@ -42,8 +58,8 @@ func (program *Options) initLogging() {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
-	if program.LogFormat == "terminal" ||
-		(program.LogFormat == "auto" && isTerminal(os.Stdout)) {
+	if program.OutputFormat == "terminal" ||
+		(program.OutputFormat == "auto" && isTerminal(os.Stdout)) {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
 	} else {
 		log.Logger = log.Output(os.Stdout)
