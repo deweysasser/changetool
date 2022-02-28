@@ -1,24 +1,23 @@
 package program
 
 import (
+	"fmt"
 	"github.com/alecthomas/kong"
 	"github.com/deweysasser/changetool/changes"
 	"github.com/deweysasser/changetool/repo"
+	"github.com/mattn/go-colorable"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"io"
 	"os"
+	"runtime"
 )
-
-// Version is created by the Makefile and passed in as a linker flag.  When go 1.18 is released, this will be replaced
-// with the built-in mechanism
-
-var Version = "unknown"
 
 // Options is the structure of program options
 type Options struct {
-	Debug     bool   `short:"d" group:"info" help:"Show debugging information"`
-	LogFormat string `short:"l" group:"info" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
-	Quiet     bool   `short:"q" group:"info" help:"Be less verbose than usual"`
+	Debug     bool   `short:"d" group:"Info" help:"Show debugging information"`
+	LogFormat string `short:"l" group:"Info" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
+	Quiet     bool   `short:"q" group:"Info" help:"Be less verbose than usual"`
 
 	Path   string `default:"." group:"locations" type:"existingdir" short:"p" help:"Path for the git worktree/repo to log"`
 	Output string `default:"-" group:"locations" short:"o" help:"File to which to send output"`
@@ -34,11 +33,13 @@ type Options struct {
 func (program *Options) Parse(args []string) (*kong.Context, error) {
 	parser, err := kong.New(program,
 		kong.Description("Brief Program Summary"),
+		kong.ShortUsageOnError(),
 		kong.Vars{
 			"type_order": changes.TypesInOrder.Join(","),
 		},
 	)
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 
@@ -50,6 +51,7 @@ func (program *Options) Run(_ *Options) error {
 	return nil
 }
 
+// AfterApply runs after the options are parsed but before anything runs
 func (program *Options) AfterApply() error {
 	program.Init()
 
@@ -85,11 +87,17 @@ func (program *Options) Init() {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
+	var out io.Writer = os.Stdout
+
+	if os.Getenv("TERM") == "" && runtime.GOOS == "windows" {
+		out = colorable.NewColorableStdout()
+	}
+
 	if program.LogFormat == "terminal" ||
 		(program.LogFormat == "auto" && isTerminal(os.Stdout)) {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: out})
 	} else {
-		log.Logger = log.Output(os.Stdout)
+		log.Logger = log.Output(out)
 	}
 
 	log.Logger.Debug().
