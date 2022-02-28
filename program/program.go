@@ -16,9 +16,9 @@ type Options struct {
 	Version bool `help:"Show program version"`
 	// VersionCmd VersionCmd `name:"version" cmd:"" help:"show program version"`
 
-	Debug        bool   `group:"Output" help:"Show debugging information"`
-	OutputFormat string `group:"Output" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
-	Quiet        bool   `group:"Output" help:"Be less verbose than usual"`
+	Debug        bool   `group:"Info" help:"Show debugging information"`
+	OutputFormat string `group:"Info" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
+	Quiet        bool   `group:"Info" help:"Be less verbose than usual"`
 }
 
 // Parse calls the CLI parsing routines
