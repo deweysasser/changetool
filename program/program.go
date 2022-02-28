@@ -3,9 +3,12 @@ package program
 import (
 	"fmt"
 	"github.com/alecthomas/kong"
+	"github.com/mattn/go-colorable"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"io"
 	"os"
+	"runtime"
 )
 
 // Version is created by the Makefile and passed in as a linker flag.  When go 1.18 is released, this will be replaced
@@ -15,10 +18,11 @@ var Version = "unknown"
 
 // Options is the structure of program options
 type Options struct {
-	Debug        bool   `help:"Show debugging information"`
-	Version      bool   `help:"Show program version"`
-	OutputFormat string `enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
-	Quiet        bool   `help:"Be less verbose than usual"`
+	Version bool `help:"Show program version"`
+
+	Debug        bool   `group:"Output" help:"Show debugging information"`
+	OutputFormat string `group:"Output" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
+	Quiet        bool   `group:"Output" help:"Be less verbose than usual"`
 }
 
 // Parse calls the CLI parsing routines
@@ -58,11 +62,17 @@ func (program *Options) initLogging() {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
+	var out io.Writer = os.Stdout
+
+	if os.Getenv("TERM") == "" && runtime.GOOS == "windows" {
+		out = colorable.NewColorableStdout()
+	}
+
 	if program.OutputFormat == "terminal" ||
 		(program.OutputFormat == "auto" && isTerminal(os.Stdout)) {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: out})
 	} else {
-		log.Logger = log.Output(os.Stdout)
+		log.Logger = log.Output(out)
 	}
 
 	log.Logger.Debug().

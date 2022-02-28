@@ -1,9 +1,9 @@
 
-#ifeq $(OS) windows
-#EXE=.exe
-#else
-#EXE=
-#endif
+ifeq ($(OS),Windows_NT)
+EXE=.exe
+else
+EXE=
+endif
 
 BASENAME=$(notdir $(shell pwd))
 PROGRAM=$(BASENAME)$(EXE)
