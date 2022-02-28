@@ -14,6 +14,7 @@ import (
 // Options is the structure of program options
 type Options struct {
 	Version bool `help:"Show program version"`
+	// VersionCmd VersionCmd `name:"version" cmd:"" help:"show program version"`
 
 	Debug        bool   `group:"Output" help:"Show debugging information"`
 	OutputFormat string `group:"Output" enum:"auto,jsonl,terminal" default:"auto" help:"How to show program output (auto|terminal|jsonl)"`
