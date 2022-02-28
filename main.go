@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/deweysasser/golang-program/program"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -13,6 +14,7 @@ func main() {
 	context, err := options.Parse(os.Args[1:])
 
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 

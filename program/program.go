@@ -11,11 +11,6 @@ import (
 	"runtime"
 )
 
-// Version is created by the Makefile and passed in as a linker flag.  When go 1.18 is released, this will be replaced
-// with the built-in mechanism
-
-var Version = "unknown"
-
 // Options is the structure of program options
 type Options struct {
 	Version bool `help:"Show program version"`
@@ -27,9 +22,13 @@ type Options struct {
 
 // Parse calls the CLI parsing routines
 func (program *Options) Parse(args []string) (*kong.Context, error) {
-	parser, err := kong.New(program) // kong.Description("Brief Program Summary"),
+	parser, err := kong.New(program,
+		kong.ShortUsageOnError(),
+		// kong.Description("Brief Program Summary"),
+	)
 
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 
