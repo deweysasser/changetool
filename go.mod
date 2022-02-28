@@ -3,12 +3,14 @@ module github.com/deweysasser/changetool
 go 1.17
 
 require (
+	bou.ke/monkey v1.0.2
 	github.com/Masterminds/semver v1.5.0
 	github.com/alecthomas/kong v0.4.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/mattn/go-colorable v0.1.12
 	github.com/rs/zerolog v1.26.1
 	github.com/stretchr/testify v1.7.0
+	github.com/zenizh/go-capturer v0.0.0-20211219060012-52ea6c8fed04
 	gopkg.in/yaml.v2 v2.3.0
 )
 
@@ -34,5 +36,4 @@ require (
 	golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-
 )
